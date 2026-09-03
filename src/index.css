@@ -1,1 +1,128 @@
 @import "tailwindcss";
+
+@theme {
+  --font-display: "Unbounded", "IBM Plex Sans", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Consolas", monospace;
+
+  --color-bg0: #08171d;
+  --color-bg1: #0c212a;
+  --color-bg2: #112b35;
+  --color-bg3: #173743;
+  --color-line: #1d3f4b;
+  --color-line2: #28505e;
+
+  --color-ink: #eaf5f3;
+  --color-dim: #a3bfc4;
+  --color-faint: #6d8e96;
+
+  --color-teal: #40d3b6;
+  --color-amber: #f5a83e;
+  --color-coral: #f0695a;
+  --color-grass: #5ad98d;
+  --color-sky: #5fb0ea;
+}
+
+/* ---------- Базовые стили ---------- */
+* { box-sizing: border-box; }
+
+html, body, #root { min-height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg0);
+  color: var(--color-ink);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Фоновые слои: сетка + дрейфующие свечения ---------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(rgba(64, 211, 182, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(64, 211, 182, 0.045) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 120% 90% at 50% 0%, black 30%, transparent 90%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 34% at 82% 8%, rgba(64, 211, 182, 0.10), transparent 70%),
+    radial-gradient(36% 30% at 8% 92%, rgba(245, 168, 62, 0.07), transparent 70%),
+    radial-gradient(28% 24% at 55% 55%, rgba(95, 176, 234, 0.05), transparent 70%);
+  animation: glowDrift 26s ease-in-out infinite alternate;
+}
+
+@keyframes glowDrift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2.5%, -1.5%, 0) scale(1.04); }
+  100% { transform: translate3d(-2%, 2%, 0) scale(1.02); }
+}
+
+/* ---------- Скроллбар ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-bg0); }
+::-webkit-scrollbar-thumb { background: #1d4552; border-radius: 6px; border: 2px solid var(--color-bg0); }
+::-webkit-scrollbar-thumb:hover { background: #2a5a6b; }
+
+/* ---------- Появление при скролле ---------- */
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.65s cubic-bezier(0.22, 0.9, 0.3, 1), transform 0.65s cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+.reveal.in { opacity: 1; transform: none; }
+
+/* ---------- Смена вкладок ---------- */
+@keyframes tabIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+.tab-enter { animation: tabIn 0.4s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
+
+/* ---------- Тосты ---------- */
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: none; }
+}
+.toast-in { animation: toastIn 0.3s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
+
+/* ---------- Пульс индикатора подключения ---------- */
+@keyframes pulseDot {
+  0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
+  50% { box-shadow: 0 0 0 5px transparent; opacity: 0.75; }
+}
+.pulse-dot { animation: pulseDot 1.6s ease-out infinite; }
+
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+.spin { animation: spinSlow 0.9s linear infinite; }
+
+/* ---------- Diff ---------- */
+.dl-add { background: rgba(90, 217, 141, 0.10); color: #a9ecc4; }
+.dl-del { background: rgba(240, 105, 90, 0.12); color: #f2ada3; }
+.dl-same { color: var(--color-dim); }
+.dl-gap { color: var(--color-faint); background: rgba(29, 63, 75, 0.35); }
+
+/* ---------- Таблица матрицы ---------- */
+.mx-row { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
+.mx-row:hover { background-color: rgba(23, 55, 67, 0.55); }
+
+/* ---------- Ползунки/инпуты ---------- */
+input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(0.2) saturate(2) hue-rotate(130deg); cursor: pointer; }
+
+/* ---------- Тонкая линия прогресса ---------- */
+@keyframes barGrow { from { width: 0; } }
+.bar-grow { animation: barGrow 0.9s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
+
+@keyframes funnelGrow { from { width: 0; } }
+.funnel-grow { animation: funnelGrow 0.8s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
