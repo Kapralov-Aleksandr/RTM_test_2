@@ -23,9 +23,7 @@
   --color-sky: #5fb0ea;
 }
 
-/* ---------- Базовые стили ---------- */
 * { box-sizing: border-box; }
-
 html, body, #root { min-height: 100%; }
 
 body {
@@ -37,19 +35,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- Фоновые слои: сетка + дрейфующие свечения ---------- */
+/* ---------- Фоновые слои: координатная сетка + дрейфующие свечения ---------- */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   z-index: -2;
   background-image:
-    linear-gradient(rgba(64, 211, 182, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(64, 211, 182, 0.045) 1px, transparent 1px);
+    linear-gradient(rgba(64, 211, 182, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(64, 211, 182, 0.04) 1px, transparent 1px);
   background-size: 46px 46px;
-  mask-image: radial-gradient(ellipse 120% 90% at 50% 0%, black 30%, transparent 90%);
+  mask-image: radial-gradient(ellipse 130% 90% at 50% 0%, black 25%, transparent 92%);
 }
-
 body::after {
   content: "";
   position: fixed;
@@ -57,15 +54,14 @@ body::after {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(42% 34% at 82% 8%, rgba(64, 211, 182, 0.10), transparent 70%),
-    radial-gradient(36% 30% at 8% 92%, rgba(245, 168, 62, 0.07), transparent 70%),
-    radial-gradient(28% 24% at 55% 55%, rgba(95, 176, 234, 0.05), transparent 70%);
-  animation: glowDrift 26s ease-in-out infinite alternate;
+    radial-gradient(40% 32% at 85% 6%, rgba(64, 211, 182, 0.09), transparent 70%),
+    radial-gradient(34% 28% at 6% 94%, rgba(245, 168, 62, 0.06), transparent 70%),
+    radial-gradient(26% 22% at 55% 55%, rgba(95, 176, 234, 0.045), transparent 70%);
+  animation: glowDrift 28s ease-in-out infinite alternate;
 }
-
 @keyframes glowDrift {
   0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(2.5%, -1.5%, 0) scale(1.04); }
+  50%  { transform: translate3d(2.5%, -1.5%, 0) scale(1.05); }
   100% { transform: translate3d(-2%, 2%, 0) scale(1.02); }
 }
 
@@ -76,36 +72,26 @@ body::after {
 ::-webkit-scrollbar-thumb:hover { background: #2a5a6b; }
 
 /* ---------- Появление при скролле ---------- */
-.reveal {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.65s cubic-bezier(0.22, 0.9, 0.3, 1), transform 0.65s cubic-bezier(0.22, 0.9, 0.3, 1);
-}
+.reveal { opacity: 0; transform: translateY(16px);
+  transition: opacity 0.65s cubic-bezier(0.22,0.9,0.3,1), transform 0.65s cubic-bezier(0.22,0.9,0.3,1); }
 .reveal.in { opacity: 1; transform: none; }
 
-/* ---------- Смена вкладок ---------- */
-@keyframes tabIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: none; }
-}
-.tab-enter { animation: tabIn 0.4s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
-
-/* ---------- Тосты ---------- */
-@keyframes toastIn {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: none; }
-}
-.toast-in { animation: toastIn 0.3s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
-
-/* ---------- Пульс индикатора подключения ---------- */
-@keyframes pulseDot {
-  0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
-  50% { box-shadow: 0 0 0 5px transparent; opacity: 0.75; }
-}
+/* ---------- Живые элементы ---------- */
+@keyframes pulseDot { 0%,100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; } 50% { box-shadow: 0 0 0 5px transparent; opacity: .75; } }
 .pulse-dot { animation: pulseDot 1.6s ease-out infinite; }
 
 @keyframes spinSlow { to { transform: rotate(360deg); } }
 .spin { animation: spinSlow 0.9s linear infinite; }
+
+@keyframes barGrow { from { width: 0; } }
+.bar-grow { animation: barGrow 0.9s cubic-bezier(0.22,0.9,0.3,1) both; }
+
+@keyframes rowIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.row-in { animation: rowIn 0.35s cubic-bezier(0.22,0.9,0.3,1) both; }
+
+/* ---------- Строки таблиц ---------- */
+.mx-row { transition: background-color 0.15s ease; }
+.mx-row:hover { background-color: rgba(23, 55, 67, 0.55); }
 
 /* ---------- Diff ---------- */
 .dl-add { background: rgba(90, 217, 141, 0.10); color: #a9ecc4; }
@@ -113,16 +99,21 @@ body::after {
 .dl-same { color: var(--color-dim); }
 .dl-gap { color: var(--color-faint); background: rgba(29, 63, 75, 0.35); }
 
-/* ---------- Таблица матрицы ---------- */
-.mx-row { transition: background-color 0.15s ease, box-shadow 0.15s ease; }
-.mx-row:hover { background-color: rgba(23, 55, 67, 0.55); }
+/* ---------- Markdown-превью ---------- */
+.md-preview { font-size: 13.5px; line-height: 1.65; color: var(--color-dim); }
+.md-preview h2 { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--color-ink);
+  margin: 1em 0 0.4em; letter-spacing: 0.02em; }
+.md-preview h3 { font-size: 13px; font-weight: 700; color: var(--color-ink); margin: 0.9em 0 0.35em; }
+.md-preview p { margin: 0.45em 0; }
+.md-preview ul { list-style: disc; padding-left: 1.3em; margin: 0.45em 0; }
+.md-preview ol { list-style: decimal; padding-left: 1.3em; margin: 0.45em 0; }
+.md-preview li { margin: 0.2em 0; }
+.md-preview strong { color: var(--color-ink); font-weight: 600; }
+.md-preview code { font-family: var(--font-mono); font-size: 12px; background: rgba(29,63,75,0.5);
+  border: 1px solid var(--color-line); border-radius: 4px; padding: 0.1em 0.35em; color: var(--color-teal); }
+.md-preview blockquote { border-left: 3px solid var(--color-amber); padding-left: 0.9em; margin: 0.6em 0; color: var(--color-faint); }
 
-/* ---------- Ползунки/инпуты ---------- */
+.md-editor { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7; resize: vertical; }
+
+/* ---------- Формы ---------- */
 input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(0.2) saturate(2) hue-rotate(130deg); cursor: pointer; }
-
-/* ---------- Тонкая линия прогресса ---------- */
-@keyframes barGrow { from { width: 0; } }
-.bar-grow { animation: barGrow 0.9s cubic-bezier(0.22, 0.9, 0.3, 1) both; }
-
-@keyframes funnelGrow { from { width: 0; } }
-.funnel-grow { animation: funnelGrow 0.8s cubic-bezier(0.22, 0.9, 0.3, 1) both; }

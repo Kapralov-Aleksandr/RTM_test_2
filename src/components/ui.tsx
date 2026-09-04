@@ -1,81 +1,124 @@
 // ============================================================
-// UI-кит: кнопки, панели, статистика, тосты, переключатели,
-// анимация появления при скролле
+// UI-кит RMS (в духе shadcn/ui: владеем компонентами сами).
+// Анимации — framer-motion, иконки — lucide-react.
 // ============================================================
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { IconX } from './icons';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AlertTriangle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
+import {
+  useEffect, useRef, useState,
+  type ButtonHTMLAttributes, type InputHTMLAttributes,
+  type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes,
+} from 'react';
 
-// ---------- Классы форм ----------
-export const inputCls =
-  'w-full rounded-md border border-line bg-bg2 px-3 py-2 text-[14px] text-ink placeholder:text-faint ' +
-  'outline-none transition-colors focus:border-teal/60 focus:bg-bg3/60';
+export type Tone = 'teal' | 'amber' | 'coral' | 'grass' | 'sky' | 'dim';
 
-export const selectCls =
-  'rounded-md border border-line bg-bg2 px-2.5 py-2 text-[13px] text-ink outline-none transition-colors ' +
-  'focus:border-teal/60 cursor-pointer';
+export function cn(...parts: Array<string | false | null | undefined>): string {
+  return parts.filter(Boolean).join(' ');
+}
 
 // ---------- Кнопки ----------
-type BtnVariant = 'primary' | 'accent' | 'ghost' | 'danger';
 
-const btnBase =
-  'inline-flex items-center justify-center gap-2 rounded-md font-semibold transition-all duration-150 ' +
-  'active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none cursor-pointer select-none';
+type BtnVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 const btnVariants: Record<BtnVariant, string> = {
-  primary:
-    'bg-amber text-[#2a1a04] hover:bg-[#ffb955] shadow-[0_2px_14px_rgba(245,168,62,0.25)] hover:shadow-[0_4px_20px_rgba(245,168,62,0.4)] hover:-translate-y-px',
-  accent:
-    'border border-teal/50 text-teal hover:bg-teal/10 hover:border-teal hover:-translate-y-px',
-  ghost:
-    'border border-line text-dim hover:text-ink hover:border-line2 hover:bg-bg2',
-  danger:
-    'border border-coral/40 text-coral hover:bg-coral/10 hover:border-coral/70',
+  primary: 'bg-amber text-[#2a1a04] hover:bg-[#ffb955] shadow-[0_4px_18px_rgba(245,168,62,0.22)]',
+  secondary: 'bg-bg3 text-ink border border-line2 hover:border-teal/50 hover:text-teal',
+  ghost: 'text-dim hover:text-ink hover:bg-bg2 border border-transparent',
+  danger: 'bg-coral/15 text-coral border border-coral/40 hover:bg-coral/25',
 };
 
 export function Button({
-  variant = 'ghost',
-  size = 'md',
-  className = '',
-  children,
-  ...rest
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: BtnVariant; size?: 'sm' | 'md' }) {
-  const sz = size === 'sm' ? 'px-3 py-1.5 text-[12.5px]' : 'px-4 py-2 text-[13.5px]';
+  variant = 'secondary', size = 'md', className, children, ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: BtnVariant; size?: 'sm' | 'md' }) {
   return (
-    <button className={`${btnBase} ${btnVariants[variant]} ${sz} ${className}`} {...rest}>
+    <button
+      className={cn(
+        'inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg font-semibold transition-all active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40',
+        size === 'sm' ? 'px-3 py-1.5 text-[12.5px]' : 'px-4 py-2 text-[13.5px]',
+        btnVariants[variant], className,
+      )}
+      {...rest}
+    >
       {children}
     </button>
   );
 }
 
-// ---------- Панель ----------
+// ---------- Формы ----------
+
+export const inputCls =
+  'w-full rounded-lg border border-line bg-bg2/80 px-3 py-2 text-[13.5px] text-ink placeholder:text-faint outline-none transition-colors focus:border-teal/60 focus:bg-bg2';
+
+export function Input({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={cn(inputCls, className)} {...rest} />;
+}
+
+export function Textarea({ className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={cn(inputCls, className)} {...rest} />;
+}
+
+export function Select({ className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <select className={cn(inputCls, 'cursor-pointer', className)} {...rest}>
+      {children}
+    </select>
+  );
+}
+
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+// ---------- Бейджи и точки ----------
+
+const badgeTones: Record<Tone, string> = {
+  teal: 'border-teal/40 bg-teal/10 text-teal',
+  amber: 'border-amber/40 bg-amber/10 text-amber',
+  coral: 'border-coral/40 bg-coral/10 text-coral',
+  grass: 'border-grass/40 bg-grass/10 text-grass',
+  sky: 'border-sky/40 bg-sky/10 text-sky',
+  dim: 'border-line bg-bg2 text-dim',
+};
+
+export function Badge({ tone = 'dim', className, children }: { tone?: Tone; className?: string; children: ReactNode }) {
+  return (
+    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-semibold', badgeTones[tone], className)}>
+      {children}
+    </span>
+  );
+}
+
+const dotTones: Record<Tone, string> = {
+  teal: 'bg-teal text-teal', amber: 'bg-amber text-amber', coral: 'bg-coral text-coral',
+  grass: 'bg-grass text-grass', sky: 'bg-sky text-sky', dim: 'bg-faint text-faint',
+};
+
+export function Dot({ tone, pulse }: { tone: Tone; pulse?: boolean }) {
+  return <span className={cn('inline-block h-2 w-2 shrink-0 rounded-full', dotTones[tone], pulse && 'pulse-dot')} />;
+}
+
+// ---------- Панели ----------
+
 export function Panel({
-  title,
-  sub,
-  icon,
-  actions,
-  children,
-  className = '',
-  pad = true,
+  title, sub, icon, actions, children, className, pad = true,
 }: {
-  title?: ReactNode;
-  sub?: ReactNode;
-  icon?: ReactNode;
-  actions?: ReactNode;
-  children: ReactNode;
-  className?: string;
-  pad?: boolean;
+  title?: string; sub?: string; icon?: ReactNode; actions?: ReactNode;
+  children: ReactNode; className?: string; pad?: boolean;
 }) {
   return (
-    <section
-      className={`rounded-xl border border-line bg-bg1/90 shadow-[0_8px_30px_rgba(0,0,0,0.25)] ${className}`}
-    >
+    <section className={cn('rounded-xl border border-line bg-bg1/90 shadow-[0_10px_30px_rgba(2,12,16,0.35)]', className)}>
       {(title || actions) && (
         <header className="flex flex-wrap items-center gap-3 border-b border-line/70 px-5 py-4">
-          {icon && <span className="grid h-9 w-9 place-items-center rounded-lg bg-bg2 text-teal border border-line">{icon}</span>}
+          {icon && <span className="text-teal">{icon}</span>}
           <div className="min-w-0 flex-1">
-            {title && <h2 className="font-display text-[14px] font-semibold tracking-wide text-ink">{title}</h2>}
-            {sub && <p className="mt-0.5 text-[12.5px] text-faint">{sub}</p>}
+            {title && <h2 className="font-display text-[13px] font-bold tracking-wide text-ink">{title}</h2>}
+            {sub && <p className="mt-0.5 text-[12px] text-faint">{sub}</p>}
           </div>
           {actions && <div className="flex items-center gap-2">{actions}</div>}
         </header>
@@ -85,245 +128,239 @@ export function Panel({
   );
 }
 
-// ---------- Плавный счётчик ----------
-export function useCountUp(target: number, duration = 850): number {
-  const [val, setVal] = useState(0);
-  const prevRef = useRef(0);
+export function PageHeader({ title, sub, actions }: { title: string; sub?: string; actions?: ReactNode }) {
+  return (
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 className="font-display text-[20px] font-bold tracking-wide text-ink">{title}</h1>
+        {sub && <p className="mt-1.5 max-w-[640px] text-[13px] leading-relaxed text-faint">{sub}</p>}
+      </div>
+      {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+// ---------- Статистика со счётчиком ----------
+
+export function Stat({
+  label, value, suffix = '', sub, tone = 'teal', icon, delay = 0,
+}: {
+  label: string; value: number; suffix?: string; sub?: string;
+  tone?: Tone; icon?: ReactNode; delay?: number;
+}) {
+  const [disp, setDisp] = useState(0);
   useEffect(() => {
-    const from = prevRef.current;
-    if (from === target) { setVal(target); return; }
-    const start = performance.now();
     let raf = 0;
-    const tick = (now: number) => {
-      const p = Math.min(1, (now - start) / duration);
+    const t0 = performance.now() + delay;
+    const tick = (t: number) => {
+      const p = Math.min(1, Math.max(0, (t - t0) / 750));
       const eased = 1 - Math.pow(1 - p, 3);
-      setVal(from + (target - from) * eased);
+      setDisp(Math.round(value * eased));
       if (p < 1) raf = requestAnimationFrame(tick);
-      else prevRef.current = target;
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [target, duration]);
-  return val;
-}
+  }, [value, delay]);
 
-// ---------- Карточка статистики ----------
-export function Stat({
-  label,
-  value,
-  suffix = '',
-  sub,
-  tone = 'teal',
-  icon,
-  delay = 0,
-}: {
-  label: string;
-  value: number;
-  suffix?: string;
-  sub?: ReactNode;
-  tone?: 'teal' | 'amber' | 'coral' | 'grass' | 'sky';
-  icon?: ReactNode;
-  delay?: number;
-}) {
-  const v = useCountUp(value);
-  const toneText: Record<string, string> = {
-    teal: 'text-teal', amber: 'text-amber', coral: 'text-coral', grass: 'text-grass', sky: 'text-sky',
-  };
-  const toneBg: Record<string, string> = {
-    teal: 'bg-teal', amber: 'bg-amber', coral: 'bg-coral', grass: 'bg-grass', sky: 'bg-sky',
+  const toneCls: Record<Tone, string> = {
+    teal: 'text-teal', amber: 'text-amber', coral: 'text-coral',
+    grass: 'text-grass', sky: 'text-sky', dim: 'text-dim',
   };
   return (
-    <Reveal delay={delay}>
-      <div className="group relative overflow-hidden rounded-xl border border-line bg-bg1/90 p-4 transition-colors hover:border-line2">
-        <span className={`absolute inset-x-0 top-0 h-[3px] opacity-70 transition-opacity group-hover:opacity-100 ${toneBg[tone]}`} />
-        <div className="flex items-start justify-between gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">{label}</p>
-          {icon && <span className={`${toneText[tone]} opacity-80`}>{icon}</span>}
-        </div>
-        <p className={`font-display mt-2 text-[30px] font-bold leading-none ${toneText[tone]}`}>
-          {Math.round(v)}
-          <span className="text-[17px] font-semibold">{suffix}</span>
-        </p>
-        {sub && <div className="mt-2 text-[12px] text-dim">{sub}</div>}
+    <div className="reveal in group rounded-xl border border-line bg-bg1/90 p-4 transition-all hover:-translate-y-0.5 hover:border-line2">
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">{label}</span>
+        <span className={cn('transition-transform group-hover:scale-110', toneCls[tone])}>{icon}</span>
       </div>
-    </Reveal>
+      <p className={cn('font-display mt-2 text-[26px] font-bold leading-none', toneCls[tone])}>
+        {disp}
+        <span className="text-[16px]">{suffix}</span>
+      </p>
+      {sub && <p className="mt-1.5 text-[11.5px] text-faint">{sub}</p>}
+    </div>
   );
 }
 
-// ---------- Бейдж ----------
-export type Tone = 'grass' | 'amber' | 'coral' | 'teal' | 'sky' | 'dim';
+// ---------- Пустые состояния ----------
 
-const badgeTones: Record<Tone, string> = {
-  grass: 'bg-grass/12 text-grass border-grass/30',
-  amber: 'bg-amber/12 text-amber border-amber/30',
-  coral: 'bg-coral/12 text-coral border-coral/30',
-  teal: 'bg-teal/12 text-teal border-teal/30',
-  sky: 'bg-sky/12 text-sky border-sky/30',
-  dim: 'bg-bg3/60 text-dim border-line',
-};
-
-export function Badge({ tone = 'dim', children, className = '' }: { tone?: Tone; children: ReactNode; className?: string }) {
+export function EmptyState({ icon, title, sub, action }: { icon?: ReactNode; title: string; sub?: ReactNode; action?: ReactNode }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11.5px] font-semibold ${badgeTones[tone]} ${className}`}>
-      {children}
-    </span>
+    <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+      {icon && <div className="mb-3 grid h-12 w-12 place-items-center rounded-xl border border-line bg-bg2 text-faint">{icon}</div>}
+      <p className="font-display text-[13.5px] font-bold text-dim">{title}</p>
+      {sub && <div className="mt-1.5 max-w-[420px] text-[12.5px] leading-relaxed text-faint">{sub}</div>}
+      {action && <div className="mt-4">{action}</div>}
+    </div>
   );
 }
 
-// ---------- Точка-индикатор ----------
-export function Dot({ tone, pulse = false }: { tone: Tone; pulse?: boolean }) {
-  const colors: Record<Tone, string> = {
-    grass: 'bg-grass text-grass',
-    amber: 'bg-amber text-amber',
-    coral: 'bg-coral text-coral',
-    teal: 'bg-teal text-teal',
-    sky: 'bg-sky text-sky',
-    dim: 'bg-faint text-faint',
-  };
-  return <span className={`inline-block h-2 w-2 shrink-0 rounded-full ${colors[tone]} ${pulse ? 'pulse-dot' : ''}`} />;
-}
+// ---------- Reveal при скролле ----------
 
-// ---------- Появление при скролле ----------
-export function Reveal({
-  children,
-  delay = 0,
-  className = '',
-}: {
-  children: ReactNode;
-  delay?: number;
-  className?: string;
-}) {
+export function Reveal({ children, delay = 0, className }: { children: ReactNode; delay?: number; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [inView, setInView] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setInView(true);
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.06 },
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { el.classList.add('in'); io.disconnect(); } },
+      { threshold: 0.08 },
     );
-    obs.observe(el);
-    return () => obs.disconnect();
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
   return (
-    <div ref={ref} className={`reveal ${inView ? 'in' : ''} ${className}`} style={{ transitionDelay: `${delay}ms` }}>
+    <div ref={ref} className={cn('reveal', className)} style={{ transitionDelay: `${delay}ms` }}>
       {children}
     </div>
   );
 }
 
-// ---------- Пустое состояние ----------
-export function EmptyState({
-  icon,
-  title,
-  sub,
-  action,
-}: {
-  icon: ReactNode;
-  title: string;
-  sub?: ReactNode;
-  action?: ReactNode;
+// ---------- Модальные окна и шторки (framer-motion) ----------
+
+export function Dialog({ open, onClose, title, children, width = 460 }: {
+  open: boolean; onClose: () => void; title: string; children: ReactNode; width?: number;
 }) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+
   return (
-    <div className="flex flex-col items-center justify-center gap-3 px-6 py-14 text-center">
-      <span className="grid h-16 w-16 place-items-center rounded-2xl border border-dashed border-line2 bg-bg2 text-faint">
-        {icon}
-      </span>
-      <p className="font-display text-[15px] font-semibold text-ink">{title}</p>
-      {sub && <div className="max-w-md text-[13px] leading-relaxed text-faint">{sub}</div>}
-      {action && <div className="mt-2">{action}</div>}
-    </div>
+    <AnimatePresence>
+      {open && (
+        <motion.div className="fixed inset-0 z-[60] grid place-items-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <div className="absolute inset-0 bg-bg0/70 backdrop-blur-sm" onClick={onClose} />
+          <motion.div
+            initial={{ scale: 0.94, y: 14, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.96, y: 8, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+            className="relative w-full rounded-xl border border-line2 bg-bg1 shadow-[0_30px_80px_rgba(0,0,0,0.55)]"
+            style={{ maxWidth: width }}
+          >
+            <header className="flex items-center justify-between border-b border-line/70 px-5 py-3.5">
+              <h3 className="font-display text-[13px] font-bold text-ink">{title}</h3>
+              <button onClick={onClose} className="cursor-pointer text-faint transition-colors hover:text-ink"><X size={17} /></button>
+            </header>
+            <div className="p-5">{children}</div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
-// ---------- Переключатель ----------
-export function Switch({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  label: ReactNode;
+export function Drawer({ open, onClose, title, sub, children, width = 560 }: {
+  open: boolean; onClose: () => void; title: ReactNode; sub?: ReactNode; children: ReactNode; width?: number;
 }) {
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(!checked)}
-      className="group flex cursor-pointer items-center gap-2.5 text-left"
-    >
-      <span
-        className={`relative h-[20px] w-[36px] shrink-0 rounded-full border transition-colors ${
-          checked ? 'border-teal/60 bg-teal/25' : 'border-line2 bg-bg3'
-        }`}
-      >
-        <span
-          className={`absolute top-[2px] h-[14px] w-[14px] rounded-full transition-all ${
-            checked ? 'left-[18px] bg-teal' : 'left-[2px] bg-faint'
-          }`}
-        />
-      </span>
-      <span className="text-[13px] text-dim transition-colors group-hover:text-ink">{label}</span>
-    </button>
-  );
-}
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
 
-// ---------- Поле формы ----------
-export function Field({ label, children, hint }: { label: string; children: ReactNode; hint?: string }) {
   return (
-    <label className="block">
-      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">{label}</span>
-      {children}
-      {hint && <span className="mt-1 block text-[11.5px] text-faint">{hint}</span>}
-    </label>
-  );
-}
-
-// ---------- Спиннер ----------
-export function Spinner({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className="spin text-current">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.2" strokeWidth="2.5" />
-      <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
+    <AnimatePresence>
+      {open && (
+        <motion.div className="fixed inset-0 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <div className="absolute inset-0 bg-bg0/60 backdrop-blur-[2px]" onClick={onClose} />
+          <motion.aside
+            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+            transition={{ type: 'spring', stiffness: 340, damping: 34 }}
+            className="absolute inset-y-0 right-0 flex w-full flex-col border-l border-line2 bg-bg1 shadow-[-24px_0_60px_rgba(0,0,0,0.5)]"
+            style={{ maxWidth: width }}
+          >
+            <header className="flex items-start justify-between gap-3 border-b border-line/70 px-6 py-4">
+              <div className="min-w-0">
+                <div className="font-display text-[14px] font-bold text-ink">{title}</div>
+                {sub && <div className="mt-0.5 text-[12px] text-faint">{sub}</div>}
+              </div>
+              <button onClick={onClose} className="cursor-pointer text-faint transition-colors hover:text-ink"><X size={18} /></button>
+            </header>
+            <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+          </motion.aside>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 
 // ---------- Тосты ----------
-export interface ToastItem {
-  id: number;
-  msg: string;
-  tone: 'ok' | 'warn' | 'err';
+
+export interface ToastItem { id: number; msg: string; tone: 'ok' | 'warn' | 'err'; }
+
+const toastBus = new Set<(t: ToastItem) => void>();
+let toastSeq = 0;
+
+export function toast(msg: string, tone: ToastItem['tone'] = 'ok') {
+  const t: ToastItem = { id: ++toastSeq, msg, tone };
+  toastBus.forEach((fn) => fn(t));
 }
 
-export function ToastHost({ toasts, dismiss }: { toasts: ToastItem[]; dismiss: (id: number) => void }) {
-  const toneCls: Record<ToastItem['tone'], string> = {
-    ok: 'border-l-grass text-grass',
-    warn: 'border-l-amber text-amber',
-    err: 'border-l-coral text-coral',
+export function ToastHost() {
+  const [items, setItems] = useState<ToastItem[]>([]);
+  useEffect(() => {
+    const fn = (t: ToastItem) => {
+      setItems((v) => [...v.slice(-3), t]);
+      setTimeout(() => setItems((v) => v.filter((x) => x.id !== t.id)), 4200);
+    };
+    toastBus.add(fn);
+    return () => { toastBus.delete(fn); };
+  }, []);
+
+  const meta = {
+    ok: { icon: <CheckCircle2 size={16} />, cls: 'border-grass/50 text-grass' },
+    warn: { icon: <AlertTriangle size={16} />, cls: 'border-amber/50 text-amber' },
+    err: { icon: <XCircle size={16} />, cls: 'border-coral/50 text-coral' },
+  };
+
+  return (
+    <div className="pointer-events-none fixed bottom-5 right-5 z-[70] flex w-[min(380px,calc(100vw-40px))] flex-col gap-2">
+      <AnimatePresence>
+        {items.map((t) => (
+          <motion.div
+            key={t.id}
+            layout
+            initial={{ opacity: 0, x: 40, scale: 0.96 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 24, scale: 0.96 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            className="pointer-events-auto flex items-start gap-2.5 rounded-lg border border-line2 bg-bg2/95 px-3.5 py-3 shadow-[0_12px_36px_rgba(0,0,0,0.5)] backdrop-blur"
+          >
+            <span className={cn('mt-0.5 shrink-0', meta[t.tone].cls)}>{meta[t.tone].icon}</span>
+            <p className="flex-1 text-[12.5px] leading-snug text-ink">{t.msg}</p>
+            <button onClick={() => setItems((v) => v.filter((x) => x.id !== t.id))} className="shrink-0 cursor-pointer text-faint transition-colors hover:text-ink">
+              <X size={14} />
+            </button>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ---------- Прогресс ----------
+
+export function ProgressBar({ value, tone = 'teal', className }: { value: number; tone?: Tone; className?: string }) {
+  const fill: Record<Tone, string> = {
+    teal: 'bg-teal', amber: 'bg-amber', coral: 'bg-coral',
+    grass: 'bg-grass', sky: 'bg-sky', dim: 'bg-faint',
   };
   return (
-    <div className="pointer-events-none fixed bottom-5 right-5 z-50 flex w-[340px] flex-col gap-2">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`toast-in pointer-events-auto flex items-start gap-2.5 rounded-lg border border-line border-l-[3px] bg-bg2/95 px-3.5 py-3 shadow-[0_10px_30px_rgba(0,0,0,0.45)] backdrop-blur-sm ${toneCls[t.tone]}`}
-        >
-          <p className="flex-1 text-[13px] font-medium leading-snug text-ink">{t.msg}</p>
-          <button
-            onClick={() => dismiss(t.id)}
-            className="cursor-pointer text-faint transition-colors hover:text-ink"
-            aria-label="Закрыть"
-          >
-            <IconX size={14} />
-          </button>
-        </div>
-      ))}
+    <div className={cn('h-1.5 overflow-hidden rounded-full bg-bg3', className)}>
+      <div className={cn('bar-grow h-full rounded-full', fill[tone])} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
     </div>
+  );
+}
+
+// ---------- Разное ----------
+
+export function InfoNote({ children }: { children: ReactNode }) {
+  return (
+    <p className="flex items-start gap-2.5 rounded-lg border border-line/70 bg-bg2/50 px-3.5 py-2.5 text-[12px] leading-relaxed text-faint">
+      <span className="mt-0.5 shrink-0 text-teal"><Info size={14} /></span>
+      <span>{children}</span>
+    </p>
   );
 }
