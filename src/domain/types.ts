@@ -1,145 +1,77 @@
 // ============================================================
-// Доменная модель RMS (Requirements Management System)
-// Сущности жизненного цикла: ТЗ → Требования → ЧТЗ →
-// Фиче-страницы → Тест-кейсы (ПМИ) → Задачи Jira
+// Доменная модель RMS — зеркало SQLite-схемы (см. backend/database.py)
 // ============================================================
 
-/** Статус атомарного требования в жизненном цикле */
-export type ReqStatus = 'draft' | 'approved' | 'in_dev' | 'in_test' | 'done';
+/** Тип атомарного требования */
+export type ReqType = 'BUSINESS' | 'FUNCTIONAL' | 'NON_FUNCTIONAL';
 
-/** Приоритет (MoSCoW) */
-export type Priority = 'must' | 'should' | 'could';
+/** Статус актуальности (вычисляемый, не хранится) */
+export type Validity = 'ok' | 'stale' | 'none';
 
-/** Происхождение требования */
-export type ReqSource = 'baseline' | 'new';
+/** projects */
+export interface Project {
+  id: string;
+  jiraKey: string;   // "LC", "PROJ"
+  name: string;
+  createdAt: string; // ISO
+}
 
-/** Атомарное требование */
+/** requirements (Таб 2 — Матрица) */
 export interface Requirement {
   id: string;
-  code: string;            // REQ-001
+  projectId: string;
+  reqKey: string;           // автогенерация: REQ-{KEY}-{TYPE}-{NNNN}
+  reqType: ReqType;
   title: string;
-  descriptionMd: string;   // Markdown: критерии приёмки, детали
-  tzClause: string;        // пункт ТЗ («3.1.2»), «—» для новых
-  chtzSection: string;     // раздел ЧТЗ; '' = пробел (не отражено)
-  featureId: string;       // фиче-страница; '' = не привязано
-  jiraKey: string;         // задача Jira; '' = не заведена
-  priority: Priority;
-  status: ReqStatus;
-  source: ReqSource;
-  newReqId?: string;       // связь с записью журнала новых требований
-  updatedAt: string;       // ISO
-}
-
-/** Версия фиче-страницы (для контроля изменений и diff) */
-export interface FeatureVersion {
-  id: string;
-  ts: string;
-  authorId: string;
-  note: string;
-  md: string;
-}
-
-/** Фиче-страница (одна фича = несколько требований) */
-export interface FeaturePage {
-  id: string;
-  code: string;            // FS-001
-  confluenceId: string;    // числовой ID в Confluence
-  title: string;
-  bodyMd: string;
-  ownerId: string;         // аналитик
-  versions: FeatureVersion[];
-}
-
-export type TestStatus = 'draft' | 'ready' | 'passed' | 'failed';
-
-/** Тест-кейс из документа ПМИ */
-export interface TestCase {
-  id: string;
-  code: string;            // TC-101
-  title: string;
-  requirementId: string;   // '' или несуществующий = «сирота»
-  suite: string;           // раздел ПМИ
-  status: TestStatus;
-}
-
-/** Кэш задач Jira (обновляется синхронизацией) */
-export interface JiraIssue {
-  key: string;
-  summary: string;
-  status: string;
-}
-
-export type NewReqStatus = 'approved' | 'in_work' | 'rejected' | 'implemented';
-
-/** Новое требование, появившееся после baseline */
-export interface NewRequirement {
-  id: string;
-  code: string;            // NR-01
   description: string;
-  source: string;
-  date: string;
-  budgetHours: number;
-  termDays: number;
-  featureId: string;
-  jiraKey: string;
-  status: NewReqStatus;
-  requirementId: string;   // заполняется при превращении в атомарное REQ
+  linkTz: string;           // ссылка на раздел ТЗ
+  linkChtz: string;         // ссылка на ЧТЗ
+  release: string;
+  notes: string;
+  dependencies: string;     // ключи зависимых требований
+  createdAt: string;
+  updatedAt: string;
+  lastValidatedFs: string | null;    // валидация фиче-страницами
+  lastValidatedTest: string | null;  // валидация тест-кейсами
 }
 
-export type Role = 'pm' | 'analyst' | 'qa' | 'dev';
-
-export interface Member {
+/** requirement_history */
+export interface RequirementHistoryEntry {
   id: string;
-  name: string;
-  role: Role;
+  requirementId: string;
+  fieldChanged: string;
+  oldValue: string;
+  newValue: string;
+  changedAt: string;
 }
 
-/** Уведомление команды об изменении фиче-страницы (синхронизация аналитик/QA/разработка) */
-export interface ChangeNotice {
-  id: string;
-  ts: string;
-  featureId: string;
-  versionId: string;
-  message: string;
-  audience: Role[];
-  done: boolean;
-}
-
-/** Исходное ТЗ заказчика */
-export interface TzDocument {
-  code: string;
-  title: string;
-  client: string;
-  receivedAt: string;
-}
-
-/** Глава ТЗ (для дерева требований) */
-export interface TzChapter {
-  code: string;            // «3.1»
-  title: string;
-}
-
-export interface Settings {
+/** Настройки интеграций (боковая панель) */
+export interface AppSettings {
   jiraUrl: string;
   confUrl: string;
   login: string;
   password: string;
-  projectKey: string;
-  demoMode: boolean;
-  lastJiraSync: string;    // ISO, '' = не было
+  demoMode: boolean; // эмуляция интеграций, пока нет backend-прокси
 }
 
-/** Корневое состояние приложения (будущая «база данных») */
+/** Корень состояния (демо-режим; в продакшене — SQLite через FastAPI) */
 export interface AppState {
   version: number;
-  tzDoc: TzDocument;
-  tzChapters: TzChapter[];
+  activeProjectId: string;
+  projects: Project[];
   requirements: Requirement[];
-  features: FeaturePage[];
-  testCases: TestCase[];
-  jiraIssues: JiraIssue[];
-  newReqs: NewRequirement[];
-  members: Member[];
-  notices: ChangeNotice[];
-  settings: Settings;
+  history: RequirementHistoryEntry[];
+  settings: AppSettings;
+}
+
+/** Форма создания/редактирования требования */
+export interface RequirementDraft {
+  reqType: ReqType;
+  title: string;
+  description: string;
+  linkTz: string;
+  linkChtz: string;
+  release: string;
+  notes: string;
+  dependencies: string;
 }
