@@ -1,28 +1,31 @@
 // ============================================================
 // Боковая панель: активный проект (мультипроектность), навигация
-// по 6 табам, настройки интеграций Jira/Confluence, индикаторы
-// подключения, кнопка «💾 Сохранить настройки».
+// по 6 табам, настройки интеграций Jira/Confluence, индикатор
+// источника данных (backend / демо), кнопка «💾 Сохранить настройки».
 // ============================================================
 
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Check, FileText, FolderKanban, GitBranch, KeyRound, Loader2, Plug, Plus, Save,
-  Table2, X, Zap,
+  Check, Database, FileText, FolderKanban, GitBranch, KeyRound, Loader2, Plug, Plus,
+  RefreshCw, Save, Table2, X, Zap,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { addProject, setActiveProject, updateProject, updateSettings, useApp } from '../services/db';
+import {
+  addProject, getBackendOnline, getMode, setActiveProject, setDemoPreference,
+  updateProjectKey, updateSettings, useApp,
+} from '../services/db';
 import { pingIntegration, type ConnStatus } from '../services/integrations';
 import { Badge, Button, Dialog, Dot, Field, Input, toast, type Tone } from './ui';
 
 /** Табы продукта (в порядке спецификации) */
 export const TABS = [
-  { to: '/tz', num: 1, label: 'Исходное ТЗ', icon: FileText, iter: 2 },
-  { to: '/matrix', num: 2, label: 'Матрица требований', icon: Table2, iter: 1 },
-  { to: '/chtz', num: 3, label: 'ЧТЗ', icon: FileText, iter: 2 },
-  { to: '/features', num: 4, label: 'Фиче-страницы', icon: FolderKanban, iter: 2 },
-  { to: '/monitor', num: 5, label: 'Проверка изменений', icon: GitBranch, iter: 3 },
-  { to: '/coverage', num: 6, label: 'Покрытие требований', icon: Zap, iter: 3 },
+  { to: '/tz', num: 1, label: 'Исходное ТЗ', icon: FileText, ready: true },
+  { to: '/matrix', num: 2, label: 'Матрица требований', icon: Table2, ready: true },
+  { to: '/chtz', num: 3, label: 'ЧТЗ', icon: FileText, ready: true },
+  { to: '/features', num: 4, label: 'Фиче-страницы', icon: FolderKanban, ready: true },
+  { to: '/monitor', num: 5, label: 'Проверка изменений', icon: GitBranch, ready: false, iter: 3 },
+  { to: '/coverage', num: 6, label: 'Покрытие требований', icon: Zap, ready: false, iter: 3 },
 ];
 
 const connTone: Record<ConnStatus, { tone: Tone; label: string }> = {
@@ -45,6 +48,8 @@ function SectionTitle({ children, right }: { children: React.ReactNode; right?: 
 export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const state = useApp();
   const active = state.projects.find((p) => p.id === state.activeProjectId) ?? state.projects[0];
+  const mode = getMode();
+  const backendOnline = getBackendOnline();
 
   const [settingsDraft, setSettingsDraft] = useState({ ...state.settings, projectKey: active?.jiraKey ?? '' });
   const [conn, setConn] = useState<{ jira: ConnStatus; conf: ConnStatus }>({ jira: 'demo', conf: 'demo' });
@@ -53,7 +58,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const [npName, setNpName] = useState('');
   const [npKey, setNpKey] = useState('');
 
-  // Индикаторы подключения — при монтировании и по кнопке
   const check = async () => {
     setChecking(true);
     setConn({ jira: 'checking', conf: 'checking' });
@@ -68,25 +72,25 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   useEffect(() => { check(); /* eslint-disable-line react-hooks/exhaustive-deps */ }, [state.settings.demoMode, state.activeProjectId]);
 
-  const onSave = () => {
+  const onSave = async () => {
     updateSettings({
       jiraUrl: settingsDraft.jiraUrl, confUrl: settingsDraft.confUrl,
       login: settingsDraft.login, password: settingsDraft.password, demoMode: settingsDraft.demoMode,
     });
     if (active && settingsDraft.projectKey.trim() && settingsDraft.projectKey.toUpperCase() !== active.jiraKey) {
-      updateProject(active.id, { jiraKey: settingsDraft.projectKey.trim() });
+      await updateProjectKey(active.id, settingsDraft.projectKey.trim().toUpperCase());
     }
-    toast('Настройки сохранены (в целевой архитектуре — data/config.json)', 'ok');
+    toast('Настройки сохранены (в backend-режиме — data/config.json)', 'ok');
     check();
   };
 
-  const onAddProject = () => {
+  const onAddProject = async () => {
     const name = npName.trim();
     const key = npKey.trim().toUpperCase();
     if (!name) { toast('Укажите название проекта', 'err'); return; }
-    if (!key || !/^[A-ZА-Я0-9]{2,10}$/.test(key)) { toast('Ключ Jira: 2–10 латинских букв/цифр, например LC', 'err'); return; }
-    if (state.projects.some((p) => p.jiraKey === key)) { toast(`Проект с ключом ${key} уже существует`, 'err'); return; }
-    const p = addProject(name, key);
+    if (!key || !/^[A-Z0-9]{2,10}$/.test(key)) { toast('Ключ Jira: 2–10 латинских букв/цифр, например LC', 'err'); return; }
+    const p = await addProject(name, key);
+    if (!p) { toast(`Проект с ключом ${key} уже существует`, 'err'); return; }
     setNewProject(false); setNpName(''); setNpKey('');
     setSettingsDraft((d) => ({ ...d, projectKey: p.jiraKey }));
     toast(`Проект «${p.name}» создан и выбран активным`, 'ok');
@@ -128,7 +132,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               className="w-full cursor-pointer rounded-lg border border-line bg-bg1 px-2.5 py-2 text-[13px] font-semibold text-ink outline-none transition-colors focus:border-teal/60"
               value={state.activeProjectId}
               onChange={(e) => {
-                setActiveProject(e.target.value);
+                void setActiveProject(e.target.value);
                 const p = state.projects.find((x) => x.id === e.target.value);
                 if (p) setSettingsDraft((d) => ({ ...d, projectKey: p.jiraKey }));
               }}
@@ -150,7 +154,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <nav className="flex flex-col gap-0.5">
             {TABS.map((t) => {
               const Icon = t.icon;
-              const ready = t.iter === 1;
               return (
                 <NavLink
                   key={t.to}
@@ -166,17 +169,17 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
                     <>
                       <span className={`absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-teal transition-opacity ${isActive ? 'opacity-100' : 'opacity-0'}`} />
                       <span className={`grid h-5 w-5 shrink-0 place-items-center rounded border font-mono text-[10px] font-bold ${
-                        isActive ? 'border-teal/50 text-teal' : ready ? 'border-line2 text-dim' : 'border-line text-faint'
+                        isActive ? 'border-teal/50 text-teal' : t.ready ? 'border-line2 text-dim' : 'border-line text-faint'
                       }`}>
                         {t.num}
                       </span>
                       <span className="truncate">{t.label}</span>
-                      {!ready && (
+                      {!t.ready && (
                         <span className="ml-auto rounded border border-line px-1 py-px text-[9px] font-bold uppercase tracking-wide text-faint/70">
-                          ит.{t.iter}
+                          ит.{'iter' in t ? t.iter : 3}
                         </span>
                       )}
-                      <Icon size={14} className={`shrink-0 transition-transform group-hover:scale-110 ${ready ? '' : 'opacity-40'}`} />
+                      <Icon size={14} className={`shrink-0 transition-transform group-hover:scale-110 ${t.ready ? '' : 'opacity-40'}`} />
                     </>
                   )}
                 </NavLink>
@@ -189,7 +192,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <section>
           <SectionTitle
             right={
-              <button onClick={check} className="cursor-pointer text-faint transition-colors hover:text-teal" title="Проверить подключение">
+              <button onClick={() => void check()} className="cursor-pointer text-faint transition-colors hover:text-teal" title="Проверить подключение">
                 {checking ? <Loader2 size={13} className="spin" /> : <Plug size={13} />}
               </button>
             }
@@ -215,15 +218,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               <Input className="px-2.5 py-1.5 font-mono text-[12px] uppercase" value={settingsDraft.projectKey} onChange={(e) => setSettingsDraft({ ...settingsDraft, projectKey: e.target.value.toUpperCase() })} />
             </Field>
 
-            <label className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-line/70 bg-bg1/60 px-2.5 py-2">
-              <span className="text-[11.5px] font-semibold text-dim">Демо-режим</span>
-              <input
-                type="checkbox" className="peer sr-only" checked={settingsDraft.demoMode}
-                onChange={(e) => setSettingsDraft({ ...settingsDraft, demoMode: e.target.checked })}
-              />
-              <span className="relative h-5 w-9 shrink-0 rounded-full bg-bg3 transition-colors peer-checked:bg-teal/70 after:absolute after:top-0.5 after:left-0.5 after:h-4 after:w-4 after:rounded-full after:bg-ink after:transition-transform peer-checked:after:translate-x-4" />
-            </label>
-
             {/* Индикаторы подключения */}
             <div className="flex flex-col gap-1.5 rounded-lg border border-line/70 bg-bg1/60 px-2.5 py-2">
               {([['Jira', conn.jira], ['Confluence', conn.conf]] as const).map(([name, st]) => (
@@ -235,7 +229,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               ))}
             </div>
 
-            <Button size="sm" variant="primary" className="w-full" onClick={onSave}>
+            <Button size="sm" variant="primary" className="w-full" onClick={() => void onSave()}>
               <Save size={13} />
               Сохранить настройки
             </Button>
@@ -243,15 +237,27 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </section>
       </div>
 
-      {/* Низ: статус */}
+      {/* Низ: источник данных */}
       <div className="border-t border-line/70 px-5 py-3">
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-faint">
-            <span className={`h-1.5 w-1.5 rounded-full ${state.settings.demoMode ? 'bg-teal pulse-dot text-teal' : 'bg-grass'}`} />
-            {state.settings.demoMode ? 'Демо-база' : 'SQLite · FastAPI'}
+        <div className="flex items-center justify-between gap-2">
+          <span className={`flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] ${mode === 'api' ? 'text-grass' : 'text-amber'}`}>
+            <Database size={12} />
+            {mode === 'api' ? 'Backend · data/app.db' : 'Демо · localStorage'}
           </span>
-          <span className="font-mono text-[10px] text-faint">итерация 1</span>
+          <button
+            onClick={() => void setDemoPreference(mode === 'api')}
+            className="flex cursor-pointer items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[10px] font-semibold text-faint transition-colors hover:border-teal/50 hover:text-teal"
+            title="Переключить источник данных (демо ↔ backend)"
+          >
+            <RefreshCw size={10} />
+            {mode === 'api' ? 'в демо' : 'к backend'}
+          </button>
         </div>
+        <p className="mt-1.5 text-[10px] leading-relaxed text-faint/80">
+          {backendOnline
+            ? 'FastAPI обнаружен автоматически: запросы идут через прокси /api → :8000.'
+            : 'Backend не обнаружен (start.bat поднимет его автоматически).'}
+        </p>
       </div>
 
       {/* Диалог нового проекта */}
@@ -271,7 +277,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           </p>
           <div className="flex justify-end gap-2">
             <Button onClick={() => setNewProject(false)}>Отмена</Button>
-            <Button variant="primary" onClick={onAddProject}><Check size={14} />Создать</Button>
+            <Button variant="primary" onClick={() => void onAddProject()}><Check size={14} />Создать</Button>
           </div>
         </div>
       </Dialog>
@@ -288,7 +294,6 @@ export function Sidebar() {
         <SidebarContent />
       </aside>
 
-      {/* Мобильная шапка */}
       <div className="fixed inset-x-0 top-0 z-40 flex items-center justify-between border-b border-line bg-bg0/85 px-4 py-3 backdrop-blur lg:hidden">
         <span className="font-display text-[13px] font-bold text-ink">REQ<span className="text-teal">·</span>TRACKER</span>
         <button onClick={() => setMobileOpen(true)} className="cursor-pointer rounded-lg border border-line px-3 py-1.5 text-[12px] font-semibold text-dim">

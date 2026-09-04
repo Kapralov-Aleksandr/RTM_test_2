@@ -39,20 +39,20 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
     }
   };
 
-  const doImport = () => {
-    if (!mapping.title !== undefined && mapping.title === undefined) {
-      toast('Укажите, какая колонка содержит «Название»', 'err');
-      return;
-    }
+  const doImport = async () => {
     if (drafts.length === 0) {
       toast('Нет строк для импорта: проверьте маппинг колонки «Название»', 'err');
       return;
     }
-    const created = importRequirements(state.activeProjectId, drafts);
-    toast(`Импортировано ${created.length} требований (первое: ${created[0]?.reqKey})`, 'ok');
-    setParsed(null);
-    setMapping({});
-    onClose();
+    try {
+      const created = await importRequirements(state.activeProjectId, drafts);
+      toast(`Импортировано ${created.length} требований (первое: ${created[0]?.reqKey})`, 'ok');
+      setParsed(null);
+      setMapping({});
+      onClose();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Ошибка импорта', 'err');
+    }
   };
 
   const close = () => { setParsed(null); setMapping({}); onClose(); };

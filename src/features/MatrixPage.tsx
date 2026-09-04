@@ -8,7 +8,8 @@ import {
   ArrowDown, ArrowUp, ArrowUpDown, CheckCheck, Download, History, Pencil, Plus,
   Search, Table2, Trash2, Upload,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Badge, Button, Dialog, EmptyState, PageHeader, Panel, Reveal, Select, Stat, toast, type Tone } from '../components/ui';
 import {
   REQ_TYPE_LABEL, REQ_TYPE_TONE, VALIDITY_META, fmtDate, fsStatus, testsStatus,
@@ -77,6 +78,17 @@ export function MatrixPage() {
   const [historyReq, setHistoryReq] = useState<Requirement | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [deleteReq, setDeleteReq] = useState<Requirement | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Deep-link из Таба 1 и Таба 3: /matrix?req=REQ-LC-FUNC-0001 → открыть карточку требования
+  useEffect(() => {
+    const key = searchParams.get('req');
+    if (!key) return;
+    const found = state.requirements.find((r) => r.reqKey.toLowerCase() === key.toLowerCase());
+    if (found) { setEditReq(found); setDrawerOpen(true); }
+    setSearchParams({}, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, state.requirements]);
 
   const rows = useMemo(() => state.requirements.filter((r) => r.projectId === state.activeProjectId), [state]);
 

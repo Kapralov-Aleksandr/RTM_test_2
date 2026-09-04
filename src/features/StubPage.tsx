@@ -15,34 +15,6 @@ interface StubSpec {
 }
 
 const STUBS: Record<string, StubSpec> = {
-  '/tz': {
-    num: 1, title: 'Исходное ТЗ заказчика', iteration: 2, status: 'В разработке',
-    points: [
-      'Редактор TipTap: жирный, курсив, списки, заголовки',
-      'Выделение текста мышкой → «📌 Зафиксировать как требование»',
-      'Голубая подсветка зафиксированного текста, tooltip с ключом REQ-…',
-      'Клик по tooltip → переход к требованию в Табе 2',
-      'Загрузка файла ТЗ (PDF/DOCX/TXT) → data/attachments/',
-    ],
-  },
-  '/chtz': {
-    num: 3, title: 'ЧТЗ · Аналитическая документация', iteration: 2, status: 'В разработке',
-    points: [
-      'Редактор TipTap для аналитической документации',
-      'Ввод @REQ-LC- → autocomplete требований из матрицы',
-      'Вставка ссылки-бейджа с ключом требования',
-      'Кликабельные бейджи → переход к требованию',
-    ],
-  },
-  '/features': {
-    num: 4, title: 'Фиче-страницы', iteration: 2, status: 'В разработке',
-    points: [
-      'Дерево: релизы → фичи, drag-n-drop, контекстное меню',
-      'Редактор содержимого фичи, ссылки на Jira и тест-кейсы',
-      'Привязка требований: модалка с поиском, бейджи',
-      'Макеты: drag-n-drop изображений → галерея',
-    ],
-  },
   '/monitor': {
     num: 5, title: 'Проверка изменений', iteration: 3, status: 'Запланировано',
     points: [
@@ -113,8 +85,9 @@ export function StubPage({ path }: { path: string }) {
             <div className="flex items-center gap-2.5 rounded-lg border border-grass/30 bg-grass/[0.05] px-4 py-3">
               <CheckCircle2 size={15} className="shrink-0 text-grass" />
               <p className="text-[12px] leading-snug text-dim">
-                Реализовано в итерации 1: <span className="font-semibold text-ink">Таб 2 «Матрица требований»</span> —
-                CRUD, автогенерация REQ-KEY-TYPE-NNNN, статусы актуальности, история, импорт Excel/CSV.
+                Уже реализовано: <span className="font-semibold text-ink">Таб 2</span> (матрица, автогенерация ID, статусы, история, импорт)
+                и <span className="font-semibold text-ink">Табы 1, 3, 4</span> (ТЗ с фиксацией выделений, ЧТЗ с @-упоминаниями,
+                фиче-страницы с деревом и макетами).
               </p>
             </div>
           </div>

@@ -1,21 +1,30 @@
 // ============================================================
 // 📜 История изменений требования (requirement_history):
 // таймлайн «поле: старое → новое» с датами.
+// В backend-режиме история подгружается по REST при открытии.
 // ============================================================
 
-import { History } from 'lucide-react';
-import { useMemo } from 'react';
+import { History, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Dialog, EmptyState } from '../components/ui';
 import { FIELD_LABEL, fmtDateTime } from '../domain/logic';
-import type { Requirement } from '../domain/types';
-import { useApp } from '../services/db';
+import type { Requirement, RequirementHistoryEntry } from '../domain/types';
+import { loadHistory } from '../services/db';
 
 export function HistoryDialog({ req, onClose }: { req: Requirement | null; onClose: () => void }) {
-  const state = useApp();
-  const entries = useMemo(
-    () => (req ? state.history.filter((h) => h.requirementId === req.id) : []),
-    [state.history, req],
-  );
+  const [entries, setEntries] = useState<RequirementHistoryEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!req) return;
+    let cancelled = false;
+    setLoading(true);
+    loadHistory(req.id)
+      .then((h) => { if (!cancelled) setEntries(h); })
+      .catch(() => { if (!cancelled) setEntries([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [req]);
 
   return (
     <Dialog
@@ -24,17 +33,21 @@ export function HistoryDialog({ req, onClose }: { req: Requirement | null; onClo
       title={req ? `📜 История · ${req.reqKey}` : 'История'}
       width={560}
     >
-      {req && entries.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-dim">
+          <Loader2 size={16} className="spin text-teal" />
+          Загружаем историю изменений…
+        </div>
+      ) : req && entries.length === 0 ? (
         <EmptyState
           icon={<History size={22} />}
           title="Изменений пока не было"
           sub="Сохраните правку в форме редактирования — изменённые поля появятся здесь со старым и новым значениями."
         />
       ) : (
-        <div className="flex max-h-[420px] flex-col gap-0 overflow-y-auto pr-1">
+        <div className="flex max-h-[420px] flex-col overflow-y-auto pr-1">
           {entries.map((h, i) => (
             <div key={h.id} className="relative flex gap-3.5 pb-5">
-              {/* вертикальная линия таймлайна */}
               {i < entries.length - 1 && <span className="absolute left-[7px] top-5 h-full w-px bg-line" />}
               <span className="relative mt-1 h-[15px] w-[15px] shrink-0 rounded-full border-2 border-teal bg-bg0" />
               <div className="min-w-0 flex-1 rounded-lg border border-line/70 bg-bg2/40 px-3.5 py-2.5">

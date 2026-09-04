@@ -70,9 +70,33 @@
 предупреждения urllib3 отключены, ответы кэшируются 300 с. Конфигурация — `data/config.json`
 (пишется из боковой панели: URL Jira, URL Confluence, логин, пароль, ключ проекта).
 
-### 5. Фиксация требования из ТЗ (Итерация 2)
-Выделение в TipTap → `POST /requirements` (автоключ) → `POST /tz/{id}/mentions`
-с `start_offset/end_offset` → подсветка в документе, tooltip с ключом, клик → Таб 2.
+### 5. Фиксация требования из ТЗ (Итерация 2, реализовано)
+Выделение в TipTap → BubbleMenu «📌 Зафиксировать как требование» → `POST /requirements`
+(автоключ) → mark `req` с attrs `reqId/reqKey` оборачивает выделение → «💾 Сохранить»:
+`extractMentions()` проходит документ, считает plain-text offset'ы →
+`POST /api/projects/{pid}/tz` (content + mentions[]) → бэкенд перезаписывает
+`tz_requirement_mentions`. Подсветка — голубой `<mark class="req-hl">`, tooltip —
+CSS `::after` с `attr(data-req-key)`, клик → `/matrix?req=REQ-…` (deep-link открывает карточку).
+
+### 6. @-упоминания в ЧТЗ (Итерация 2, реализовано)
+Ввод `@` → матчинг `@([A-Za-zА-Яа-я0-9_-]*)$` перед курсором → popup у каретки
+(`view.coordsAtPos`), навигация ↑↓/Enter → вставка атомарного узла `reqMention`
+(serialize: `<span class="req-badge" data-req-id data-req-key>`). Список связанных
+требований извлекается из HTML регуляркой по `data-req-key`.
+
+### 7. Фиче-страницы (Итерация 2, реализовано)
+`feature_tree` (RELEASE/FEATURE, order_num) + `features` (tree_node_id). Drag-n-drop:
+фича → релиз (смена parent_id) или перед фичей (пересчёт order_num соседей на бэкенде,
+`POST /api/tree/{id}/move`). Контекстное меню: добавить/переименовать/удалить (каскад:
+feature_requirements, feature_history, mockups). Привязка требований — M:N
+`feature_requirements`. Макеты: `POST /api/features/{id}/mockups` → `data/mockups/`,
+раздача через `StaticFiles /files` (проксируется Vite наравне с `/api`).
+
+### 8. Автосвязка фронтенда и бэкенда
+`vite.config.js`: `server.proxy` для `/api` и `/files` → `:8000`, порт 3000, `open: true`.
+Фронтенд ходит только относительными путями. `services/db.ts` при старте:
+`checkHealth()` → режим `api` (write-through: каждое действие = REST-вызов + обновление кэша)
+или `demo` (localStorage). UI не знает о режиме — единый `useApp()` и асинхронные действия.
 
 ## Решения
 

@@ -39,19 +39,27 @@ export function RequirementDrawer({ open, req, onClose }: { open: boolean; req: 
 
   const set = <K extends keyof RequirementDraft>(k: K, v: RequirementDraft[K]) => setDraft((d) => ({ ...d, [k]: v }));
 
-  const onSave = () => {
+  const [saving, setSaving] = useState(false);
+  const onSave = async () => {
     if (!draft.title.trim()) {
       toast('Название требования обязательно', 'err');
       return;
     }
-    if (req) {
-      updateRequirement(req.id, draft);
-      toast(`${req.reqKey} сохранено: updated_at обновлён, статусы актуальности сброшены`, 'warn');
-    } else {
-      const created = addRequirement(state.activeProjectId, draft);
-      toast(`Создано требование ${created.reqKey}`, 'ok');
+    setSaving(true);
+    try {
+      if (req) {
+        await updateRequirement(req.id, draft);
+        toast(`${req.reqKey} сохранено: updated_at обновлён, статусы актуальности сброшены`, 'warn');
+      } else {
+        const created = await addRequirement(state.activeProjectId, draft);
+        toast(`Создано требование ${created?.reqKey ?? ''}`, 'ok');
+      }
+      onClose();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось сохранить требование', 'err');
+    } finally {
+      setSaving(false);
     }
-    onClose();
   };
 
   return (

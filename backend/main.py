@@ -9,9 +9,10 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from database import init_db
+from database import DATA_DIR, init_db
 from routers import documents, features, integrations, projects, requirements
 
 # Структурированное логирование (время | уровень | модуль | сообщение)
@@ -25,7 +26,7 @@ logger = logging.getLogger("rms")
 app = FastAPI(
     title="Requirements Tracker API",
     description="Трассировка требований: ТЗ → ЧТЗ → фиче-страницы → ПМИ → Jira",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 # Фронтенд (Vite dev-server) обращается к API с другого порта
@@ -66,6 +67,9 @@ app.include_router(features.router)
 app.include_router(documents.router)
 app.include_router(integrations.router)
 
+# Загруженные файлы: макеты (data/mockups) и вложения ТЗ (data/attachments)
+app.mount("/files", StaticFiles(directory=DATA_DIR), name="files")
+
 
 @app.on_event("startup")
 def on_startup() -> None:
@@ -75,4 +79,5 @@ def on_startup() -> None:
 
 @app.get("/api/health", tags=["Служебные"])
 def health() -> dict:
+    """Живость сервиса — по этому эндпоинту фронтенд автоопределяет backend"""
     return {"status": "ok", "version": app.version}

@@ -117,3 +117,101 @@ body::after {
 
 /* ---------- Формы ---------- */
 input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(0.2) saturate(2) hue-rotate(130deg); cursor: pointer; }
+
+/* ---------- Контент редактора TipTap ---------- */
+.ProseMirror {
+  min-height: 260px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 18px 22px 26px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-dim);
+}
+.ProseMirror > * + * { margin-top: 0.55em; }
+.ProseMirror h2 {
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 700; color: var(--color-ink);
+  letter-spacing: 0.02em; margin-top: 1.2em;
+}
+.ProseMirror h3 { font-size: 14px; font-weight: 700; color: var(--color-ink); margin-top: 1em; }
+.ProseMirror ul { list-style: disc; padding-left: 1.4em; }
+.ProseMirror ol { list-style: decimal; padding-left: 1.4em; }
+.ProseMirror li { margin: 0.25em 0; }
+.ProseMirror li p { margin: 0; }
+.ProseMirror strong { color: var(--color-ink); }
+.ProseMirror blockquote {
+  border-left: 3px solid var(--color-amber);
+  padding-left: 0.9em; color: var(--color-faint); margin: 0.7em 0;
+}
+.ProseMirror code {
+  font-family: var(--font-mono); font-size: 12.5px;
+  background: rgba(29,63,75,0.5); border: 1px solid var(--color-line);
+  border-radius: 4px; padding: 0.05em 0.35em; color: var(--color-teal);
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left; height: 0; pointer-events: none; color: var(--color-faint);
+}
+
+.rt-link { color: var(--color-sky); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* Голубая подсветка «текст → требование» (Таб 1) */
+.req-hl {
+  background: rgba(95, 176, 234, 0.18);
+  border-bottom: 2px solid rgba(95, 176, 234, 0.65);
+  border-radius: 3px;
+  padding: 0.05em 0.1em;
+  color: var(--color-ink);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+.req-hl:hover { background: rgba(95, 176, 234, 0.32); }
+/* Tooltip с ключом требования при наведении */
+.req-hl::after {
+  content: attr(data-req-key);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 7px);
+  z-index: 40;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-sky);
+  background: var(--color-bg1);
+  border: 1px solid var(--color-line2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.req-hl:hover::after { opacity: 1; transform: none; }
+
+/* Кликабельный бейдж требования (Таб 3) */
+.req-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-teal);
+  background: rgba(64, 211, 182, 0.1);
+  border: 1px solid rgba(64, 211, 182, 0.4);
+  border-radius: 6px;
+  padding: 0.05em 0.45em;
+  margin: 0 0.15em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: all;
+}
+.req-badge:hover { background: rgba(64, 211, 182, 0.22); transform: translateY(-1px); }
+.req-badge::before { content: "⌗ "; opacity: 0.6; }
+
+/* ---------- Drag-n-drop дерево ---------- */
+.tree-drop { outline: 2px dashed rgba(64,211,182,0.5); outline-offset: -2px; background: rgba(64,211,182,0.06); }
