@@ -115,6 +115,8 @@ export const api = {
   getTree: (pid: string) => request<ApiTreeNode[]>(`/api/projects/${pid}/tree`),
   addTreeNode: (pid: string, body: { node_type: 'RELEASE' | 'FEATURE'; name: string; parent_id: number | null; jira_key?: string | null }) =>
     request<ApiTreeNode>(`/api/projects/${pid}/tree`, j(body)),
+  importTree: (pid: string, body: { nodes: Array<{ name: string; node_type: 'RELEASE' | 'FEATURE'; children?: unknown[]; jira_key?: string | null }> }) =>
+    request<{ releases: number; features: number }>(`/api/projects/${pid}/tree/import`, j(body)),
   renameTreeNode: (id: string, body: { name: string }) => request<ApiTreeNode>(`/api/tree/${id}`, jp(body)),
   moveTreeNode: (id: string, body: { parent_id: number | null; order_num: number }) =>
     request<ApiTreeNode>(`/api/tree/${id}/move`, j(body)),

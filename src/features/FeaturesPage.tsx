@@ -6,7 +6,7 @@
 // ============================================================
 
 import {
-  ChevronRight, ExternalLink, FolderKanban, FolderPlus, GripVertical, ImagePlus, Link2,
+  ChevronRight, ExternalLink, FileUp, FolderKanban, FolderPlus, GripVertical, ImagePlus, Link2,
   Loader2, Pencil, Plus, Save, Search, Trash2, X,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type DragEvent } from 'react';
@@ -19,7 +19,7 @@ import {
 import { fmtDateTime } from '../domain/logic';
 import type { FeatureTreeNode } from '../domain/types';
 import {
-  addTreeNode, deleteMockup, deleteTreeNode, linkRequirement, moveTreeNode,
+  addTreeNode, deleteMockup, deleteTreeNode, importTreeStructure, linkRequirement, moveTreeNode,
   renameTreeNode, saveFeature, unlinkRequirement, uploadMockup, useApp,
 } from '../services/db';
 
@@ -141,6 +141,24 @@ export function FeaturesPage() {
     toast('Релиз добавлен', 'ok');
   };
 
+  /** 📄 Импорт структуры дерева из JSON */
+  const onImportJson = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!Array.isArray(data) && !Array.isArray(data.nodes)) {
+        toast('JSON должен содержать массив узлов или поле "nodes"', 'err');
+        return;
+      }
+      const nodes = Array.isArray(data) ? data : data.nodes;
+      const result = await importTreeStructure(nodes);
+      toast(`Импортировано: ${result.releases} релизов, ${result.features} фич`, 'ok');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось импортировать JSON', 'err');
+    }
+  };
+
   // ---------- Фича: сохранение, привязки, макеты ----------
 
   const onSaveFeature = async () => {
@@ -183,10 +201,18 @@ export function FeaturesPage() {
         title="Таб 4 · Фиче-страницы"
         sub="Дерево «Релизы → Фичи»: перетаскивайте узлы, правая кнопка — контекстное меню. Справа — содержимое фичи, привязка требований и макеты."
         actions={
-          <Button onClick={() => void addRelease()}>
-            <FolderPlus size={15} />
-            Добавить релиз
-          </Button>
+          <>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line px-4 py-2 text-[13px] font-semibold text-dim transition-all hover:border-teal/50 hover:text-teal">
+              <FileUp size={15} />
+              Импорт JSON
+              <input type="file" accept=".json" className="hidden"
+                onChange={(e) => { void onImportJson(e.target.files?.[0]); e.target.value = ''; }} />
+            </label>
+            <Button onClick={() => void addRelease()}>
+              <FolderPlus size={15} />
+              Добавить релиз
+            </Button>
+          </>
         }
       />
 

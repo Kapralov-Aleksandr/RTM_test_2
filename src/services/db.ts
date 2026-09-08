@@ -399,6 +399,42 @@ export async function addTreeNode(nodeType: 'RELEASE' | 'FEATURE', name: string,
   emit();
 }
 
+/** Импорт структуры дерева из JSON (рекурсивно создаёт релизы и фичи) */
+export async function importTreeStructure(nodes: Array<{ name: string; node_type: 'RELEASE' | 'FEATURE'; children?: unknown[]; jira_key?: string | null }>): Promise<{ releases: number; features: number }> {
+  if (mode === 'api') {
+    const result = await api.importTree(state.activeProjectId, { nodes });
+    await refreshFromApi();
+    return result;
+  }
+  // Демо-режим: рекурсивно создаём узлы
+  let releases = 0, features = 0;
+  interface ImportNode { name: string; node_type: 'RELEASE' | 'FEATURE'; children?: ImportNode[]; jira_key?: string | null; }
+  const createNode = (node: ImportNode, parentId: string | null) => {
+    const siblings = state.tree.filter((n) => n.parentId === parentId);
+    const id = uid('n');
+    const newNode: FeatureTreeNode = {
+      id, projectId: state.activeProjectId, parentId, nodeType: node.node_type,
+      name: node.name, jiraKey: node.jira_key ?? undefined, orderNum: siblings.length,
+    };
+    state = { ...state, tree: [...state.tree, newNode] };
+    if (node.node_type === 'RELEASE') releases++;
+    else {
+      features++;
+      state = { ...state, features: [...state.features, { id: uid('ft'), treeNodeId: id, title: node.name, content: '', linkJira: '', linkTestCases: '', requirementIds: [], mockups: [], updatedAt: new Date().toISOString(), lastValidated: null }] };
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        createNode(child, id);
+      }
+    }
+  };
+  for (const root of nodes) {
+    createNode(root as ImportNode, null);
+  }
+  emit();
+  return { releases, features };
+}
+
 export async function renameTreeNode(id: string, name: string): Promise<void> {
   if (mode === 'api') { await api.renameTreeNode(asApiId(id), { name }); await refreshFromApi(); return; }
   state = {

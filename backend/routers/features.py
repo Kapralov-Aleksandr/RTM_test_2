@@ -293,3 +293,66 @@ def delete_mockup(mockup_id: int, db: Session = Depends(get_db)) -> None:
         pass
     db.delete(mockup)
     db.commit()
+
+
+# ---------- Импорт структуры дерева ----------
+
+class TreeImportNode(BaseModel):
+    name: str
+    node_type: str  # RELEASE | FEATURE
+    children: list["TreeImportNode"] = []
+    jira_key: str | None = None
+
+
+TreeImportNode.model_rebuild()
+
+
+class TreeImport(BaseModel):
+    nodes: list[TreeImportNode]
+
+
+@router.post("/projects/{project_id}/tree/import")
+def import_tree(project_id: int,  TreeImport, db: Session = Depends(get_db)) -> dict:
+    """Импорт структуры дерева из JSON: создаёт релизы и фичи с вложенностью"""
+    created = {"releases": 0, "features": 0}
+
+    def create_node(node: TreeImportNode, parent_id: int | None) -> int:
+        if node.node_type not in ("RELEASE", "FEATURE"):
+            raise HTTPException(status_code=400, detail=f"Неизвестный node_type: {node.node_type}")
+        if node.node_type == "FEATURE" and parent_id is None:
+            raise HTTPException(status_code=400, detail="Фича должна находиться внутри релиза")
+
+        # Определяем order_num
+        siblings = db.execute(
+            select(FeatureTreeNode)
+            .where(FeatureTreeNode.project_id == project_id)
+            .where(FeatureTreeNode.parent_id == parent_id)
+        ).scalars().all()
+        order = len(siblings)
+
+        db_node = FeatureTreeNode(
+            project_id=project_id, node_type=node.node_type, name=node.name,
+            parent_id=parent_id, jira_key=node.jira_key, order_num=order,
+        )
+        db.add(db_node)
+        db.flush()  # получаем db_node.id
+
+        if node.node_type == "RELEASE":
+            created["releases"] += 1
+        else:
+            created["features"] += 1
+            # Создаём пустую фиче-страницу
+            feature = Feature(tree_node_id=db_node.id, title=node.name, content="")
+            db.add(feature)
+
+        # Рекурсивно создаём детей
+        for child in node.children:
+            create_node(child, db_node.id)
+
+        return db_node.id
+
+    for root_node in data.nodes:
+        create_node(root_node, None)
+
+    db.commit()
+    return created

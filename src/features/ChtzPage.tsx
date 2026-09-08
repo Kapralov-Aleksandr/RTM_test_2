@@ -4,12 +4,13 @@
 // список требований из Таба 2, выбор вставляет кликабельный бейдж.
 // ============================================================
 
-import { AtSign, Loader2, Save } from 'lucide-react';
+import { AtSign, FileUp, Loader2, Save } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Editor } from '@tiptap/react';
 import { RichEditor } from '../components/Editor';
 import { Badge, Button, Field, InfoNote, Input, PageHeader, Panel, Reveal, toast } from '../components/ui';
+import { api } from '../services/api';
 import { saveChtzDoc, useApp } from '../services/db';
 
 /** Извлечение бейджей @-упоминаний из HTML-контента редактора */
@@ -30,6 +31,7 @@ export function ChtzPage() {
   const editorRef = useRef<Editor | null>(null);
   const [title, setTitle] = useState(doc?.title ?? 'ЧТЗ');
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [badges, setBadges] = useState<string[]>(() => extractBadges(doc?.content ?? ''));
 
   useEffect(() => {
@@ -55,16 +57,43 @@ export function ChtzPage() {
     }
   };
 
+  /** 📄 Загрузка и парсинг файла ЧТЗ → подстановка HTML в редактор */
+  const onUpload = async (file: File | undefined) => {
+    if (!file) return;
+    const editor = editorRef.current;
+    if (!editor) { toast('Редактор ещё не готов, попробуйте через секунду', 'err'); return; }
+    setUploading(true);
+    try {
+      const parsed = await api.parseDocument('chtz', file);
+      editor.commands.setContent(parsed.html);
+      if (parsed.title) setTitle(parsed.title);
+      setBadges(extractBadges(parsed.html));
+      toast(`Файл «${file.name}» распарсен и загружен в редактор (${(parsed.html.length / 1024).toFixed(1)} КБ)`, 'ok');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Не удалось загрузить и распарсить файл', 'err');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
         title="Таб 3 · ЧТЗ"
         sub="Наберите «@REQ-» в тексте — появится autocomplete требований из Таба 2. Выбранный пункт вставляется бейджем; клик по бейджу открывает требование."
         actions={
-          <Button variant="primary" onClick={() => void onSave()} disabled={saving}>
-            {saving ? <Loader2 size={15} className="spin" /> : <Save size={15} />}
-            💾 Сохранить
-          </Button>
+          <>
+            <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line px-4 py-2 text-[13px] font-semibold text-dim transition-all hover:border-teal/50 hover:text-teal">
+              {uploading ? <Loader2 size={15} className="spin" /> : <FileUp size={15} />}
+              {uploading ? 'Парсинг…' : 'Загрузить файл'}
+              <input type="file" accept=".docx,.pdf,.txt,.doc" className="hidden"
+                onChange={(e) => { void onUpload(e.target.files?.[0]); e.target.value = ''; }} />
+            </label>
+            <Button variant="primary" onClick={() => void onSave()} disabled={saving}>
+              {saving ? <Loader2 size={15} className="spin" /> : <Save size={15} />}
+              💾 Сохранить
+            </Button>
+          </>
         }
       />
 
