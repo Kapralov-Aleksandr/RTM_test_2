@@ -225,8 +225,13 @@ const asApiId = (id: string) => id; // строки-числа проходят 
 
 export async function setActiveProject(id: string): Promise<void> {
   state = { ...state, activeProjectId: id, history: [] };
-  if (mode === 'api') await refreshFromApi();
-  else emit();
+  if (mode === 'api') {
+    await refreshFromApi();
+  } else {
+    // В демо-режиме сбрасываем документы при смене проекта
+    state = { ...state, tzDoc: null, chtzDoc: null };
+    emit();
+  }
 }
 
 export async function addProject(name: string, jiraKey: string): Promise<Project | null> {

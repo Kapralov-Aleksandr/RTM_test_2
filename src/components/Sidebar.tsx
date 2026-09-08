@@ -111,8 +111,8 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-5 px-3.5 py-4">
-        {/* Проекты */}
+      <div className="flex min-h-0 flex-1 flex-col gap-4 px-3.5 py-4">
+        {/* Секция 1: Активный проект */}
         <section>
           <SectionTitle
             right={
@@ -145,6 +145,92 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               <span className="text-[10.5px] uppercase tracking-[0.14em] text-faint">Ключ Jira</span>
               <Badge tone="amber" className="font-mono">{active?.jiraKey}</Badge>
             </div>
+          </div>
+        </section>
+
+        {/* Разделитель */}
+        <div className="border-t border-line/50" />
+
+        {/* Секция 2: Индикаторы подключения */}
+        <section>
+          <SectionTitle
+            right={
+              <button onClick={() => void check()} className="cursor-pointer text-faint transition-colors hover:text-teal" title="Проверить подключение">
+                {checking ? <Loader2 size={13} className="spin" /> : <Plug size={13} />}
+              </button>
+            }
+          >
+            Подключение
+          </SectionTitle>
+          <div className="flex flex-col gap-1.5 rounded-lg border border-line/70 bg-bg2/50 px-2.5 py-2">
+            {([['Jira', conn.jira], ['Confluence', conn.conf]] as const).map(([name, st]) => (
+              <div key={name} className="flex items-center gap-2">
+                <Dot tone={connTone[st].tone} pulse={st === 'checking'} />
+                <span className="text-[11.5px] font-semibold text-dim">{name}</span>
+                <span className="ml-auto text-[10.5px] text-faint">{connTone[st].label}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Разделитель */}
+        <div className="border-t border-line/50" />
+
+        {/* Секция 3: Переключатель демо-режима */}
+        <section>
+          <SectionTitle>Режим работы</SectionTitle>
+          <div className="rounded-lg border border-line/70 bg-bg2/50 p-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <span className={`flex items-center gap-1.5 text-[11px] font-semibold ${mode === 'api' ? 'text-grass' : 'text-amber'}`}>
+                <Database size={11} />
+                {mode === 'api' ? 'Backend' : 'Демо'}
+              </span>
+              <button
+                onClick={() => void setDemoPreference(mode === 'api')}
+                className="flex cursor-pointer items-center gap-1 rounded-md border border-line px-2 py-1 text-[10.5px] font-semibold text-faint transition-colors hover:border-teal/50 hover:text-teal"
+                title="Переключить источник данных (демо ↔ backend)"
+              >
+                <RefreshCw size={10} />
+                {mode === 'api' ? 'в демо' : 'к backend'}
+              </button>
+            </div>
+            <p className="mt-1.5 text-[10px] leading-relaxed text-faint/80">
+              {backendOnline
+                ? 'FastAPI обнаружен: данные в data/app.db'
+                : 'Backend не найден: демо-данные в localStorage'}
+            </p>
+          </div>
+        </section>
+
+        {/* Разделитель */}
+        <div className="border-t border-line/50" />
+
+        {/* Секция 4: Настройки интеграций */}
+        <section>
+          <SectionTitle>Настройки</SectionTitle>
+          <div className="flex flex-col gap-2.5 rounded-xl border border-line bg-bg2/50 p-3">
+            <Field label="URL Jira">
+              <Input className="px-2.5 py-1.5 font-mono text-[11.5px]" value={settingsDraft.jiraUrl} onChange={(e) => setSettingsDraft({ ...settingsDraft, jiraUrl: e.target.value })} />
+            </Field>
+            <Field label="URL Confluence">
+              <Input className="px-2.5 py-1.5 font-mono text-[11.5px]" value={settingsDraft.confUrl} onChange={(e) => setSettingsDraft({ ...settingsDraft, confUrl: e.target.value })} />
+            </Field>
+            <div className="grid grid-cols-2 gap-2">
+              <Field label="Логин">
+                <Input className="px-2.5 py-1.5 text-[12px]" placeholder="ivanov" value={settingsDraft.login} onChange={(e) => setSettingsDraft({ ...settingsDraft, login: e.target.value })} />
+              </Field>
+              <Field label="Пароль">
+                <Input type="password" className="px-2.5 py-1.5 text-[12px]" placeholder="••••" value={settingsDraft.password} onChange={(e) => setSettingsDraft({ ...settingsDraft, password: e.target.value })} />
+              </Field>
+            </div>
+            <Field label="Ключ проекта">
+              <Input className="px-2.5 py-1.5 font-mono text-[12px] uppercase" value={settingsDraft.projectKey} onChange={(e) => setSettingsDraft({ ...settingsDraft, projectKey: e.target.value.toUpperCase() })} />
+            </Field>
+
+            <Button size="sm" variant="primary" className="w-full" onClick={() => void onSave()}>
+              <Save size={13} />
+              Сохранить
+            </Button>
           </div>
         </section>
 
@@ -187,77 +273,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             })}
           </nav>
         </section>
-
-        {/* Интеграции */}
-        <section>
-          <SectionTitle
-            right={
-              <button onClick={() => void check()} className="cursor-pointer text-faint transition-colors hover:text-teal" title="Проверить подключение">
-                {checking ? <Loader2 size={13} className="spin" /> : <Plug size={13} />}
-              </button>
-            }
-          >
-            Интеграции
-          </SectionTitle>
-          <div className="flex flex-col gap-2.5 rounded-xl border border-line bg-bg2/50 p-3">
-            <Field label="URL Jira">
-              <Input className="px-2.5 py-1.5 font-mono text-[11.5px]" value={settingsDraft.jiraUrl} onChange={(e) => setSettingsDraft({ ...settingsDraft, jiraUrl: e.target.value })} />
-            </Field>
-            <Field label="URL Confluence">
-              <Input className="px-2.5 py-1.5 font-mono text-[11.5px]" value={settingsDraft.confUrl} onChange={(e) => setSettingsDraft({ ...settingsDraft, confUrl: e.target.value })} />
-            </Field>
-            <div className="grid grid-cols-2 gap-2">
-              <Field label="Логин">
-                <Input className="px-2.5 py-1.5 text-[12px]" placeholder="ivanov" value={settingsDraft.login} onChange={(e) => setSettingsDraft({ ...settingsDraft, login: e.target.value })} />
-              </Field>
-              <Field label="Пароль">
-                <Input type="password" className="px-2.5 py-1.5 text-[12px]" placeholder="••••" value={settingsDraft.password} onChange={(e) => setSettingsDraft({ ...settingsDraft, password: e.target.value })} />
-              </Field>
-            </div>
-            <Field label="Ключ проекта">
-              <Input className="px-2.5 py-1.5 font-mono text-[12px] uppercase" value={settingsDraft.projectKey} onChange={(e) => setSettingsDraft({ ...settingsDraft, projectKey: e.target.value.toUpperCase() })} />
-            </Field>
-
-            {/* Индикаторы подключения */}
-            <div className="flex flex-col gap-1.5 rounded-lg border border-line/70 bg-bg1/60 px-2.5 py-2">
-              {([['Jira', conn.jira], ['Confluence', conn.conf]] as const).map(([name, st]) => (
-                <div key={name} className="flex items-center gap-2">
-                  <Dot tone={connTone[st].tone} pulse={st === 'checking'} />
-                  <span className="text-[11.5px] font-semibold text-dim">{name}</span>
-                  <span className="ml-auto text-[10.5px] text-faint">{connTone[st].label}</span>
-                </div>
-              ))}
-            </div>
-
-            <Button size="sm" variant="primary" className="w-full" onClick={() => void onSave()}>
-              <Save size={13} />
-              Сохранить настройки
-            </Button>
-          </div>
-        </section>
-      </div>
-
-      {/* Низ: источник данных */}
-      <div className="border-t border-line/70 px-5 py-3">
-        <div className="flex items-center justify-between gap-2">
-          <span className={`flex items-center gap-1.5 text-[10.5px] font-semibold uppercase tracking-[0.12em] ${mode === 'api' ? 'text-grass' : 'text-amber'}`}>
-            <Database size={12} />
-            {mode === 'api' ? 'Backend · data/app.db' : 'Демо · localStorage'}
-          </span>
-          <button
-            onClick={() => void setDemoPreference(mode === 'api')}
-            className="flex cursor-pointer items-center gap-1 rounded-md border border-line px-1.5 py-0.5 text-[10px] font-semibold text-faint transition-colors hover:border-teal/50 hover:text-teal"
-            title="Переключить источник данных (демо ↔ backend)"
-          >
-            <RefreshCw size={10} />
-            {mode === 'api' ? 'в демо' : 'к backend'}
-          </button>
-        </div>
-        <p className="mt-1.5 text-[10px] leading-relaxed text-faint/80">
-          {backendOnline
-            ? 'FastAPI обнаружен автоматически: запросы идут через прокси /api → :8000.'
-            : 'Backend не обнаружен (start.bat поднимет его автоматически).'}
-        </p>
       </div>
 
       {/* Диалог нового проекта */}
