@@ -74,7 +74,12 @@ export const ReqMention = Node.create({
     return [{ tag: 'span[data-req-badge]' }];
   },
   renderHTML({ node, HTMLAttributes }) {
-    return ['span', mergeAttributes(HTMLAttributes, { class: 'req-badge', 'data-req-badge': '' }), node.attrs.label ?? ''];
+    return ['span', mergeAttributes(HTMLAttributes, {
+      class: 'req-badge',
+      'data-req-badge': '',
+      'data-req-id': node.attrs.id ?? '',
+      'data-req-key': node.attrs.label ?? '',
+    }), node.attrs.label ?? ''];
   },
 });
 
@@ -201,6 +206,7 @@ export function RichEditor({
     const m = before.match(/@([A-Za-zА-Яа-я0-9_-]*)$/);
     if (!m) { setSugg(null); return; }
     const coords = ed.view.coordsAtPos(from - m[1].length - 1);
+    console.log('[Editor] @-autocomplete triggered:', { query: m[1], from, coords });
     setSugg({ x: coords.left, y: coords.bottom + 6, query: m[1], from: from - m[1].length - 1 });
     setSuggIdx(0);
   }, []);
@@ -255,7 +261,6 @@ export function RichEditor({
 
   if (!editor) return null;
 
-  const selectionEmpty = editor.state.selection.from === editor.state.selection.to;
   const hasReqMark = editor.isActive('req');
 
   return (
@@ -298,7 +303,7 @@ export function RichEditor({
       <EditorContent editor={editor} />
 
       {/* Подсказка по @-упоминаниям (Таб 3) */}
-      {mentionAutocomplete && selectionEmpty && sugg && suggItems.length > 0 && createPortal(
+      {mentionAutocomplete && sugg && suggItems.length > 0 && createPortal(
         <div
           className="fixed z-[65] w-[340px] overflow-hidden rounded-lg border border-line2 bg-bg1 shadow-[0_16px_44px_rgba(0,0,0,0.55)]"
           style={{ left: Math.min(sugg.x, window.innerWidth - 356), top: sugg.y }}

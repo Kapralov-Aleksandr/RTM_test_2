@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import type { Editor } from '@tiptap/react';
 import { RichEditor } from '../components/Editor';
 import { Badge, Button, Field, InfoNote, Input, PageHeader, Panel, Reveal, toast } from '../components/ui';
+import { autoTransferRequirements } from '../lib/autoTransfer';
 import { api } from '../services/api';
 import { saveChtzDoc, useApp } from '../services/db';
 
@@ -46,7 +47,19 @@ export function ChtzPage() {
     if (!editor) return;
     setSaving(true);
     try {
-      const html = editor.getHTML();
+      let html = editor.getHTML();
+      
+      // Автоматический перенос требований из ТЗ в ЧТЗ при совпадении текста
+      const tzDoc = state.tzDoc;
+      if (tzDoc && tzDoc.mentions && tzDoc.mentions.length > 0) {
+        const { html: transferredHtml, transferredCount } = autoTransferRequirements(html, tzDoc);
+        if (transferredCount > 0) {
+          html = transferredHtml;
+          editor.commands.setContent(html);
+          toast(`Автоматически перенесено ${transferredCount} требований из ТЗ`, 'ok');
+        }
+      }
+      
       await saveChtzDoc(title.trim() || 'ЧТЗ', html);
       setBadges(extractBadges(html));
       toast(`ЧТЗ сохранено в chtz_documents (упоминаний требований: ${extractBadges(html).length})`, 'ok');
