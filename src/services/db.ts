@@ -224,12 +224,31 @@ export async function initStore(): Promise<void> {
 const asApiId = (id: string) => id; // строки-числа проходят в URL как есть
 
 export async function setActiveProject(id: string): Promise<void> {
-  state = { ...state, activeProjectId: id, history: [] };
   if (mode === 'api') {
+    state = { ...state, activeProjectId: id, history: [] };
     await refreshFromApi();
   } else {
-    // В демо-режиме сбрасываем документы при смене проекта
-    state = { ...state, tzDoc: null, chtzDoc: null };
+    // В демо-режиме сохраняем текущие документы перед переключением
+    const tzDocs = state.tzDocs || {};
+    const chtzDocs = state.chtzDocs || {};
+    
+    if (state.tzDoc) {
+      tzDocs[state.activeProjectId] = state.tzDoc;
+    }
+    if (state.chtzDoc) {
+      chtzDocs[state.activeProjectId] = state.chtzDoc;
+    }
+    
+    // Загружаем документы нового проекта
+    state = {
+      ...state,
+      activeProjectId: id,
+      history: [],
+      tzDoc: tzDocs[id] || null,
+      chtzDoc: chtzDocs[id] || null,
+      tzDocs,
+      chtzDocs,
+    };
     emit();
   }
 }
@@ -362,10 +381,17 @@ export async function saveTzDoc(title: string, content: string, mentions: TzMent
     return;
   }
   const now = new Date().toISOString();
-  state = {
-    ...state,
-    tzDoc: { id: state.tzDoc?.id ?? uid('d'), projectId: state.activeProjectId, title, content, attachment: state.tzDoc?.attachment ?? null, mentions, updatedAt: now },
+  const doc: TzDocument = {
+    id: state.tzDoc?.id ?? uid('d'),
+    projectId: state.activeProjectId,
+    title, content,
+    attachment: state.tzDoc?.attachment ?? null,
+    mentions,
+    updatedAt: now,
   };
+  const tzDocs = state.tzDocs || {};
+  tzDocs[state.activeProjectId] = doc;
+  state = { ...state, tzDoc: doc, tzDocs };
   emit();
 }
 
@@ -388,7 +414,15 @@ export async function uploadTzAttachment(file: File): Promise<{ name: string; ur
 
 export async function saveChtzDoc(title: string, content: string): Promise<void> {
   if (mode === 'api') { await api.saveChtz(state.activeProjectId, { title, content }); await refreshFromApi(); return; }
-  state = { ...state, chtzDoc: { id: state.chtzDoc?.id ?? uid('d'), projectId: state.activeProjectId, title, content, updatedAt: new Date().toISOString() } };
+  const doc: ChtzDocument = {
+    id: state.chtzDoc?.id ?? uid('d'),
+    projectId: state.activeProjectId,
+    title, content,
+    updatedAt: new Date().toISOString(),
+  };
+  const chtzDocs = state.chtzDocs || {};
+  chtzDocs[state.activeProjectId] = doc;
+  state = { ...state, chtzDoc: doc, chtzDocs };
   emit();
 }
 

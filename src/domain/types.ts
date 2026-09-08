@@ -138,4 +138,7 @@ export interface AppState {
   tree: FeatureTreeNode[];
   features: Feature[];
   settings: AppSettings;
+  // Хранилище документов per-project для демо-режима
+  tzDocs?: Record<string, TzDocument>;
+  chtzDocs?: Record<string, ChtzDocument>;
 }
