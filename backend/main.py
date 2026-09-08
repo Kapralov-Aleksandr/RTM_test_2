@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from database import DATA_DIR, init_db
-from routers import documents, features, integrations, projects, requirements
+from routers import documents, features, integrations, parsing, projects, requirements
 
 # Структурированное логирование (время | уровень | модуль | сообщение)
 logging.basicConfig(
@@ -65,6 +65,7 @@ app.include_router(projects.router)
 app.include_router(requirements.router)
 app.include_router(features.router)
 app.include_router(documents.router)
+app.include_router(parsing.router)
 app.include_router(integrations.router)
 
 # Загруженные файлы: макеты (data/mockups) и вложения ТЗ (data/attachments)

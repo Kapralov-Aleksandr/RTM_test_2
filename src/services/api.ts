@@ -99,6 +99,14 @@ export const api = {
     fd.append('file', file);
     return request<{ filename: string; url: string }>(`/api/projects/${pid}/tz/upload`, { method: 'POST', body: fd });
   },
+  parseDocument: (docType: 'tz' | 'chtz', file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return request<{ html: string; title: string; attachment: { filename: string; url: string } }>(
+      `/api/documents/${docType}/upload-and-parse`,
+      { method: 'POST', body: fd }
+    );
+  },
   getChtz: (pid: string) => request<ApiChtz | null>(`/api/projects/${pid}/chtz`),
   saveChtz: (pid: string, body: { title: string; content: string }) =>
     request<ApiChtz>(`/api/projects/${pid}/chtz`, j(body)),

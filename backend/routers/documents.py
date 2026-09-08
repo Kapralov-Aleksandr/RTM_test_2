@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from database import (
     DATA_DIR, ChtzDocument, Requirement, SessionLocal, TzDocument, TzRequirementMention,
 )
+from services.document_parser import parse_document
 
 router = APIRouter(prefix="/api/projects/{project_id}", tags=["Документы"])
 

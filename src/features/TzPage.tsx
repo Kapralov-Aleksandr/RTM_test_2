@@ -16,6 +16,7 @@ import {
 import { REQ_TYPE_LABEL } from '../domain/logic';
 import type { ReqType } from '../domain/types';
 import { addRequirement, saveTzDoc, uploadTzAttachment, useApp } from '../services/db';
+import { api } from '../services/api';
 
 export function TzPage() {
   const state = useApp();
@@ -84,10 +85,24 @@ export function TzPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const r = await uploadTzAttachment(file);
-      toast(`Файл «${r?.name}» сохранён в data/attachments`, 'ok');
+      // Парсинг документа в HTML
+      const parsed = await api.parseDocument('tz', file);
+      
+      // Подстановка HTML в редактор
+      const editor = editorRef.current;
+      if (editor) {
+        editor.commands.setContent(parsed.html);
+      }
+      
+      // Обновление заголовка
+      setTitle(parsed.title || file.name);
+      
+      // Сохранение файла как вложения
+      await uploadTzAttachment(file);
+      
+      toast(`Документ «${file.name}» распарсен и загружен в редактор`, 'ok');
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Не удалось загрузить файл', 'err');
+      toast(e instanceof Error ? e.message : 'Не удалось загрузить или распарсить файл', 'err');
     } finally {
       setUploading(false);
     }
