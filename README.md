@@ -23,11 +23,13 @@
 ## Быстрый старт
 
 ```bat
-start.bat          :: Windows: поднимет backend (uvicorn :8000) и frontend (vite :5173)
+start.bat          :: Windows: поднимет backend (uvicorn :8000) и frontend (vite :3000)
 ```
 ```bash
 ./start.sh         # Linux/macOS
 ```
+
+**Примечание**: `start.bat` использует только ASCII-символы и работает в любой кодировке Windows (UTF-8, ANSI, Windows-1251).
 
 Вручную:
 

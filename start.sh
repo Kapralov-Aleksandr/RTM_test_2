@@ -1,37 +1,37 @@
 #!/usr/bin/env bash
-# Requirements Tracker: запуск стека (backend + frontend)
+# Requirements Tracker Launcher
 set -e
 cd "$(dirname "$0")"
 
 echo "============================================================"
-echo "  Requirements Tracker: запуск стека (backend + frontend)"
+echo "  Requirements Tracker Launcher"
 echo "============================================================"
 
 # ---------- Backend ----------
 if command -v python3 >/dev/null 2>&1; then
   if [ ! -d backend/venv ]; then
-    echo "[*] Создаю виртуальное окружение backend/venv ..."
+    echo "[*] Creating virtual environment backend/venv ..."
     python3 -m venv backend/venv
   fi
-  echo "[*] Устанавливаю зависимости backend ..."
+  echo "[*] Installing backend dependencies ..."
   backend/venv/bin/python -m pip install -q -r backend/requirements.txt
 
-  echo "[*] Запускаю FastAPI на http://localhost:8000 (Swagger: /docs)"
+  echo "[*] Starting FastAPI on http://localhost:8000 (Swagger: /docs)"
   (cd backend && ../backend/venv/bin/python -m uvicorn main:app --reload --port 8000 &)
 else
-  echo "[!] Python3 не найден — backend не запущен, продолжаю с фронтендом."
+  echo "[!] Python3 not found - backend not started, continuing with frontend."
 fi
 
 # ---------- Frontend ----------
 if ! command -v node >/dev/null 2>&1; then
-  echo "[!] Node.js не найден. Установите LTS с nodejs.org."
+  echo "[!] Node.js not found. Install LTS from nodejs.org."
   exit 1
 fi
 
 if [ ! -d node_modules ]; then
-  echo "[*] Устанавливаю зависимости фронтенда (npm install) ..."
+  echo "[*] Installing frontend dependencies (npm install) ..."
   npm install
 fi
 
-echo "[*] Запускаю фронтенд на http://localhost:5173"
+echo "[*] Starting frontend on http://localhost:3000"
 npm run dev
