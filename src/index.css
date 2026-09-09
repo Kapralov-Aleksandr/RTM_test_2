@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Unbounded", "IBM Plex Sans", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "Consolas", monospace;
+
+  --color-bg0: #08171d;
+  --color-bg1: #0c212a;
+  --color-bg2: #112b35;
+  --color-bg3: #173743;
+  --color-line: #1d3f4b;
+  --color-line2: #28505e;
+
+  --color-ink: #eaf5f3;
+  --color-dim: #a3bfc4;
+  --color-faint: #6d8e96;
+
+  --color-teal: #40d3b6;
+  --color-amber: #f5a83e;
+  --color-coral: #f0695a;
+  --color-grass: #5ad98d;
+  --color-sky: #5fb0ea;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { min-height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-bg0);
+  color: var(--color-ink);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Фоновые слои: координатная сетка + дрейфующие свечения ---------- */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(rgba(64, 211, 182, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(64, 211, 182, 0.04) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse 130% 90% at 50% 0%, black 25%, transparent 92%);
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 32% at 85% 6%, rgba(64, 211, 182, 0.09), transparent 70%),
+    radial-gradient(34% 28% at 6% 94%, rgba(245, 168, 62, 0.06), transparent 70%),
+    radial-gradient(26% 22% at 55% 55%, rgba(95, 176, 234, 0.045), transparent 70%);
+  animation: glowDrift 28s ease-in-out infinite alternate;
+}
+@keyframes glowDrift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2.5%, -1.5%, 0) scale(1.05); }
+  100% { transform: translate3d(-2%, 2%, 0) scale(1.02); }
+}
+
+/* ---------- Скроллбар ---------- */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--color-bg0); }
+::-webkit-scrollbar-thumb { background: #1d4552; border-radius: 6px; border: 2px solid var(--color-bg0); }
+::-webkit-scrollbar-thumb:hover { background: #2a5a6b; }
+
+/* ---------- Появление при скролле ---------- */
+.reveal { opacity: 0; transform: translateY(16px);
+  transition: opacity 0.65s cubic-bezier(0.22,0.9,0.3,1), transform 0.65s cubic-bezier(0.22,0.9,0.3,1); }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ---------- Живые элементы ---------- */
+@keyframes pulseDot { 0%,100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; } 50% { box-shadow: 0 0 0 5px transparent; opacity: .75; } }
+.pulse-dot { animation: pulseDot 1.6s ease-out infinite; }
+
+@keyframes spinSlow { to { transform: rotate(360deg); } }
+.spin { animation: spinSlow 0.9s linear infinite; }
+
+@keyframes barGrow { from { width: 0; } }
+.bar-grow { animation: barGrow 0.9s cubic-bezier(0.22,0.9,0.3,1) both; }
+
+@keyframes rowIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.row-in { animation: rowIn 0.35s cubic-bezier(0.22,0.9,0.3,1) both; }
+
+/* ---------- Строки таблиц ---------- */
+.mx-row { transition: background-color 0.15s ease; }
+.mx-row:hover { background-color: rgba(23, 55, 67, 0.55); }
+
+/* ---------- Diff ---------- */
+.dl-add { background: rgba(90, 217, 141, 0.10); color: #a9ecc4; }
+.dl-del { background: rgba(240, 105, 90, 0.12); color: #f2ada3; }
+.dl-same { color: var(--color-dim); }
+.dl-gap { color: var(--color-faint); background: rgba(29, 63, 75, 0.35); }
+
+/* ---------- Markdown-превью ---------- */
+.md-preview { font-size: 13.5px; line-height: 1.65; color: var(--color-dim); }
+.md-preview h2 { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--color-ink);
+  margin: 1em 0 0.4em; letter-spacing: 0.02em; }
+.md-preview h3 { font-size: 13px; font-weight: 700; color: var(--color-ink); margin: 0.9em 0 0.35em; }
+.md-preview p { margin: 0.45em 0; }
+.md-preview ul { list-style: disc; padding-left: 1.3em; margin: 0.45em 0; }
+.md-preview ol { list-style: decimal; padding-left: 1.3em; margin: 0.45em 0; }
+.md-preview li { margin: 0.2em 0; }
+.md-preview strong { color: var(--color-ink); font-weight: 600; }
+.md-preview code { font-family: var(--font-mono); font-size: 12px; background: rgba(29,63,75,0.5);
+  border: 1px solid var(--color-line); border-radius: 4px; padding: 0.1em 0.35em; color: var(--color-teal); }
+.md-preview blockquote { border-left: 3px solid var(--color-amber); padding-left: 0.9em; margin: 0.6em 0; color: var(--color-faint); }
+
+.md-editor { font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7; resize: vertical; }
+
+/* ---------- Формы ---------- */
+input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.7) sepia(0.2) saturate(2) hue-rotate(130deg); cursor: pointer; }
+
+/* ---------- Контент редактора TipTap ---------- */
+.ProseMirror {
+  min-height: 260px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 18px 22px 26px;
+  outline: none;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--color-dim);
+}
+.ProseMirror > * + * { margin-top: 0.55em; }
+.ProseMirror h2 {
+  font-family: var(--font-display);
+  font-size: 16px; font-weight: 700; color: var(--color-ink);
+  letter-spacing: 0.02em; margin-top: 1.2em;
+}
+.ProseMirror h3 { font-size: 14px; font-weight: 700; color: var(--color-ink); margin-top: 1em; }
+.ProseMirror ul { list-style: disc; padding-left: 1.4em; }
+.ProseMirror ol { list-style: decimal; padding-left: 1.4em; }
+.ProseMirror li { margin: 0.25em 0; }
+.ProseMirror li p { margin: 0; }
+.ProseMirror strong { color: var(--color-ink); }
+.ProseMirror blockquote {
+  border-left: 3px solid var(--color-amber);
+  padding-left: 0.9em; color: var(--color-faint); margin: 0.7em 0;
+}
+.ProseMirror code {
+  font-family: var(--font-mono); font-size: 12.5px;
+  background: rgba(29,63,75,0.5); border: 1px solid var(--color-line);
+  border-radius: 4px; padding: 0.05em 0.35em; color: var(--color-teal);
+}
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left; height: 0; pointer-events: none; color: var(--color-faint);
+}
+
+.rt-link { color: var(--color-sky); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* Голубая подсветка «текст → требование» (Таб 1) */
+.req-hl {
+  background: rgba(95, 176, 234, 0.18);
+  border-bottom: 2px solid rgba(95, 176, 234, 0.65);
+  border-radius: 3px;
+  padding: 0.05em 0.1em;
+  color: var(--color-ink);
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+.req-hl:hover { background: rgba(95, 176, 234, 0.32); }
+/* Tooltip с ключом требования при наведении */
+.req-hl::after {
+  content: attr(data-req-key);
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 7px);
+  z-index: 40;
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-sky);
+  background: var(--color-bg1);
+  border: 1px solid var(--color-line2);
+  border-radius: 6px;
+  padding: 3px 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.req-hl:hover::after { opacity: 1; transform: none; }
+
+/* Кликабельный бейдж требования (Таб 3) */
+.req-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-teal);
+  background: rgba(64, 211, 182, 0.1);
+  border: 1px solid rgba(64, 211, 182, 0.4);
+  border-radius: 6px;
+  padding: 0.05em 0.45em;
+  margin: 0 0.15em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: all;
+}
+.req-badge:hover { background: rgba(64, 211, 182, 0.22); transform: translateY(-1px); }
+.req-badge::before { content: "⌗ "; opacity: 0.6; }
+
+/* ---------- Drag-n-drop дерево ---------- */
+.tree-drop { outline: 2px dashed rgba(64,211,182,0.5); outline-offset: -2px; background: rgba(64,211,182,0.06); }
